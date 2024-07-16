@@ -6,7 +6,7 @@ using MySql.Data.MySqlClient;
 public class Order
 {
     public int OrderID { get; set; }
-    public string UserName { get; set; }
+    public int UserID { get; set; }
     public int ProductID { get; set; }
     public string CouponCode { get; set; }
     public int Quantity { get; set; }

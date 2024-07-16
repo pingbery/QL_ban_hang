@@ -54,14 +54,19 @@ class Program
                     .Title("[green]Unsigned[/]")
                     .AddChoices(new[]
                     {
+                        "Guest",
                         "Login",
                         "Register",
                         "Forgot Password",
+                        "",
                         "Exit"
                     }));
 
             switch (choice)
             {
+                case "Guest":
+                    Guest();
+                    break;
                 case "Login":
                     Login();
                     break;
@@ -176,12 +181,6 @@ class Program
         else if (!Regex.IsMatch(Password, @"\d"))
         {
             Console.Write("Password must contain at least one digit.");
-            return false;
-        }
-
-        else if (!Regex.IsMatch(Password, @"[@$!%*?&]"))
-        {
-            Console.Write("Password must contain at least one special character (allowed characters: @$!%*?&).");
             return false;
         }
 
@@ -330,12 +329,15 @@ class Program
         }
     }
     static void Login()
+{
+    string UserName = "";
+    string Password = "";
+    int UserID;
+
+    Console.WriteLine("Login:");
+
+    while (invalidAttempts < maxAttempts) // Vòng lặp cho phép nhập lại khi chưa vượt quá số lần nhập sai cho phép
     {
-        string UserName ="";
-        string Password ="";
-
-
-        Console.WriteLine("Login:");
         Console.Write("Enter your login name: ");
         UserName = Console.ReadLine();
         Console.Write("Enter your password: ");
@@ -345,38 +347,60 @@ class Program
         {
             connection.Open();
 
-            string query = "SELECT COUNT(*) FROM users WHERE UserName = @LoginName AND Password = @Password";
+            string query = "SELECT UserID,role FROM users WHERE UserName = @LoginName AND Password = @Password";
             MySqlCommand command = new MySqlCommand(query, connection);
             command.Parameters.AddWithValue("@LoginName", UserName);
             command.Parameters.AddWithValue("@Password", Password);
 
-            var role = command.ExecuteScalar() as string;
-                if (role == null)
+            using (MySqlDataReader reader = command.ExecuteReader())
+            {
+                if (reader.Read())
                 {
-                    Console.WriteLine("Tên người dùng hoặc mật khẩu không hợp lệ.");
-                    invalidAttempts++;
-                    if (invalidAttempts >= maxAttempts)
-                    {
-                        Console.WriteLine("Quá nhiều lần nhập không hợp lệ. Thoát.");
-                        Environment.Exit(0);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Đăng nhập thành công. Chào mừng, {role}!");
+                    UserID = reader.GetInt32("UserID");
+                    string role = reader.GetString("role");
+
+                    Console.WriteLine($"Login successful. Welcome, {role}!");
+
+                    // Reset invalid attempts on successful login
+                    invalidAttempts = 0;
+
+                    // Role-based logic handling
                     if (role == "admin")
                     {
-                        // Logic cho admin
                         AdminMenu();
                     }
                     else if (role == "customer")
                     {
-                        // Logic cho khách hàng
-                        CustomerMenu();
+                        CustomerMenu(UserName, UserID); // Pass UserName and UserID to customer menu
+                    }
+
+                    break; // Exit the loop after successful login
+                }
+                else
+                {
+                    invalidAttempts++;
+                    // Check if maximum attempts are reached
+                    if (invalidAttempts >= maxAttempts)
+                    {
+                        Console.WriteLine("Too many invalid entries. Exiting.");
+                        Environment.Exit(0); // Exit the program after too many invalid attempts
+                    }
+                    else
+                    {
+                        Console.WriteLine($"You have entered {invalidAttempts} incorrect attempts. Please try again.");
                     }
                 }
+            }
         }
     }
+
+    // Nếu vòng lặp kết thúc mà vẫn chưa đăng nhập thành công và vượt quá số lần nhập sai
+    if (invalidAttempts >= maxAttempts)
+    {
+        Console.WriteLine("You have exceeded the number of allowed incorrect entries. Please try again later.");
+        // Thêm các xử lý khác nếu cần
+    }
+}
     static void Register()
     {
         string Email = "";
@@ -389,7 +413,7 @@ class Program
         string Address = "";
 
         Console.WriteLine("Register: ");
-        while(invalidAttempts < maxAttempts)
+        while(invalidAttempts <= maxAttempts)
         {
             Console.Write("Enter your loggin name : ");
             UserName = Console.ReadLine();
@@ -413,12 +437,12 @@ class Program
         }
         if (invalidAttempts >= maxAttempts)
         {
-            Console.WriteLine("You have entered incorrectly more than 7 times.");
+            Console.WriteLine("You have entered incorrectly more than 5 times.");
             invalidAttempts = 0;
             return;
         }
 
-        while(invalidAttempts < maxAttempts)
+        while(invalidAttempts <= maxAttempts)
         {
             Console.Write("Enter your pasword: ");
             Password = Console.ReadLine();
@@ -433,12 +457,12 @@ class Program
         }
         if (invalidAttempts >= maxAttempts)
         {
-            Console.WriteLine("You have entered incorrectly more than 7 times.");
+            Console.WriteLine("You have entered incorrectly more than 5 times.");
             invalidAttempts = 0;
             return;
         }
 
-        while(invalidAttempts < maxAttempts)
+        while(invalidAttempts <= maxAttempts)
         {
             Console.Write("Enter your Full name: ");
             Name = Console.ReadLine();
@@ -453,12 +477,12 @@ class Program
         }
         if (invalidAttempts >= maxAttempts)
         {
-            Console.WriteLine("You have entered incorrectly more than 7 times.");
+            Console.WriteLine("You have entered incorrectly more than 5 times.");
             invalidAttempts = 0;
             return;
         }
 
-        while(invalidAttempts < maxAttempts)
+        while(invalidAttempts <= maxAttempts)
         {
             Console.Write("Enter your gender: ");
             Gender = Console.ReadLine().Trim().ToLower();
@@ -473,12 +497,12 @@ class Program
         }
         if (invalidAttempts >= maxAttempts)
         {
-            Console.WriteLine("You have entered incorrectly more than 7 times.");
+            Console.WriteLine("You have entered incorrectly more than 5 times.");
             invalidAttempts = 0;
             return;
         }
 
-        while(invalidAttempts < maxAttempts)
+        while(invalidAttempts <= maxAttempts)
         {
             Console.WriteLine("Enter your date of birth: ");
             DateOfBirth = Console.ReadLine();
@@ -494,12 +518,12 @@ class Program
         }
         if (invalidAttempts >= maxAttempts)
         {
-            Console.WriteLine("You have entered incorrectly more than 7 times.");
+            Console.WriteLine("You have entered incorrectly more than 5 times.");
             invalidAttempts = 0;
             return;
         }
 
-        while(invalidAttempts < maxAttempts)
+        while(invalidAttempts <= maxAttempts)
         {
             Console.Write("Enter your email: ");
             Email = Console.ReadLine();
@@ -523,12 +547,12 @@ class Program
         }
         if (invalidAttempts >= maxAttempts)
         {
-            Console.WriteLine("You have entered incorrectly more than 7 times.");
+            Console.WriteLine("You have entered incorrectly more than 5 times.");
             invalidAttempts = 0;
             return;
         }
 
-        while(invalidAttempts < maxAttempts)
+        while(invalidAttempts <= maxAttempts)
         {
             Console.Write("Enter your phone number: ");
             PhoneNumber = Console.ReadLine();
@@ -552,7 +576,7 @@ class Program
         }
         if (invalidAttempts >= maxAttempts)
         {
-            Console.WriteLine("You have entered incorrectly more than 7 times.");
+            Console.WriteLine("You have entered incorrectly more than 5 times.");
             invalidAttempts = 0;
             return;
         }
@@ -636,34 +660,80 @@ class Program
             Console.WriteLine("Incorrect information. Unable to reset password");
         }
     }
-    static void CustomerMenu()
+
+    static void Guest()
+    {
+        List<CategoryOfProduct> categoryList = new List<CategoryOfProduct>();
+        List<Product> productList = LoadProductsFromDatabase(connectionString);
+        while (true)
+        {
+            var choice = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("[green]Unsigned[/]")
+                    .AddChoices(new[]
+                    {
+                        "Search category",
+                        "View category",
+                        "Search product",
+                        "View product",
+                        "Register",
+                        "",
+                        "Return",
+                        "Exit"
+                    }));
+
+            switch (choice)
+            {
+                case "Search category":
+                    SearchCategoryByID(categoryList,connectionString);
+                    break;
+                case "View category":
+                    DisplayCategory(categoryList,connectionString);
+                    break;
+                case "Search product":
+                    SearchProductByID(productList,connectionString);
+                    break;
+                case "View product":
+                    DisplayProduct(productList,connectionString);
+                    break;
+                case "Register":
+                    Register();
+                    break;
+                case "Return":
+                    return;
+                case "Exit":
+                    ExitProgram();
+                    break;
+                default:
+                    AnsiConsole.MarkupLine("[red]Invalid option. Please choose again.[/]");
+                    AnsiConsole.Prompt(new TextPrompt<string>("Press any key to continue..."));
+                    break;
+            }
+        }
+    }
+
+    static void CustomerMenu(string userName,int userID)
     {
         while (true)
         {
-            AnsiConsole.Clear();
             var choice = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("[green]MENU[/]")
                     .AddChoices(new[]
                     {
-                        "Category",
-                        "Policies and Customer Support",
+                        "Order",
                         "Personal Information",
                         "Return",
-                        "",
                         "Exit"
                     }));
 
             switch (choice)
-            {
-                case "Category":
-                    Menu1();
-                    break;
-                case "Policies and Customer Support":
-                    Menu2();
+            {   
+                case "Order":
+                    Order(userID);
                     break;
                 case "Personal Information":
-                    Menu3();
+                    PersonalInformation(userName);
                     break;
                 case "Return":
                     return;
@@ -677,128 +747,27 @@ class Program
             }
         }
     }
-    static void Menu1()
+    static void PersonalInformation(string currentUser)
     {
         while (true)
         {
-            AnsiConsole.Clear();
             var choice = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
-                    .Title("[green]MENU 1[/]")
+                    .Title("[green]Personal Information[/]")
                     .AddChoices(new[]
                     {
-                        "Customer Management",
-                        "Product Management",
-                        "Category Management",
-                        "Warehouse Management",
-                        "Coupon Management",
-                        "Return",
-                        "",
-                        "Exit"
-                    }));
-
-            switch (choice)
-            {
-                case "Customer Management":
-                    CustomersManagementMenu();
-                    break;
-                case "Product Management":
-                    ProductsManagementMenu();
-                    break;
-                case "Category Management":
-                    CategoryManagementMenu();
-                    break;
-                case "Warehouse Management":
-                    WarehouseManagementMenu();
-                    break;
-                case "Coupon Management":
-                    CouponsManagementMenu();
-                    break;
-                case "Return":
-                    return;
-                case "Exit":
-                    ExitProgram();
-                    break;
-                default:
-                    AnsiConsole.MarkupLine("[red]Invalid option. Please choose again.[/]");
-                    AnsiConsole.Prompt(new TextPrompt<string>("Press any key to continue..."));
-                    break;
-            }
-        }
-    }
-    static void Menu2()
-    {
-        while (true)
-        {
-            AnsiConsole.Clear();
-            var choice = AnsiConsole.Prompt(
-                new SelectionPrompt<string>()
-                    .Title("[green]MENU 1[/]")
-                    .AddChoices(new[]
-                    {
-                        "Customer Management",
-                        "Product Management",
-                        "Category Management",
-                        "Warehouse Management",
-                        "Coupon Management",
-                        "Return",
-                        "",
-                        "Exit"
-                    }));
-
-            switch (choice)
-            {
-                case "Customer Management":
-                    CustomersManagementMenu();
-                    break;
-                case "Product Management":
-                    ProductsManagementMenu();
-                    break;
-                case "Category Management":
-                    CategoryManagementMenu();
-                    break;
-                case "Warehouse Management":
-                    WarehouseManagementMenu();
-                    break;
-                case "Coupon Management":
-                    CouponsManagementMenu();
-                    break;
-                case "Return":
-                    return;
-                case "Exit":
-                    ExitProgram();
-                    break;
-                default:
-                    AnsiConsole.MarkupLine("[red]Invalid option. Please choose again.[/]");
-                    AnsiConsole.Prompt(new TextPrompt<string>("Press any key to continue..."));
-                    break;
-            }
-        }
-    }
-    static void Menu3()
-    {
-        string currentUser = "currentUserName"; // Lấy từ phiên đăng nhập
-        while (true)
-        {
-            AnsiConsole.Clear();
-            var choice = AnsiConsole.Prompt(
-                new SelectionPrompt<string>()
-                    .Title("[green]MENU 1[/]")
-                    .AddChoices(new[]
-                    {
-                        "Personal Information",
+                        "Display Personal Info",
                         "Edit personal information",
                         "Return",
-                        "",
                         "Exit"
                     }));
 
             switch (choice)
             {
-                case "DisplayCustomerPersonalInfo":
+                case "Display Personal Info":
                     DisplayCustomerPersonalInfo(currentUser, connectionString);
                     break;
-                case "EditCustomerPersonalInfo":
+                case "Edit personal information":
                     EditCustomerPersonalInfo(currentUser, connectionString);
                     break;
                 case "Return":
@@ -813,14 +782,331 @@ class Program
             }
         }
     }
+    static void Order(int userID)
+    {
+        while (true)
+        {
+            var choice = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("[green] Order Menu[/]")
+                    .AddChoices(new[]
+                    {
+                        "Display Order",
+                        "Edit Order",
+                        "Return",
+                        "Exit"
+                    }));
+
+            switch (choice)
+            {
+                case "Display Order":
+                    DisplayCustomerOrder(userID, connectionString);
+                    break;
+                case "Edit Order":
+                    EditCustomerOrderInfo(userID, connectionString);
+                    break;
+                case "Return":
+                    return;
+                case "Exit":
+                    ExitProgram();
+                    break;
+                default:
+                    AnsiConsole.MarkupLine("[red]Invalid option. Please choose again.[/]");
+                    AnsiConsole.Prompt(new TextPrompt<string>("Press any key to continue..."));
+                    break;
+            }
+        }
+    }
     
+
+    static void DisplayCustomerPersonalInfo(string userName, string connectionString)
+    {
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            connection.Open();
+            string query = "SELECT * FROM users WHERE UserName = @UserName";
+            MySqlCommand command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@UserName", userName);
+            MySqlDataReader reader = command.ExecuteReader();
+
+            if (reader.Read())
+            {
+                var table = new Table();
+                table.AddColumn("UserName");
+                table.AddColumn("Name");
+                table.AddColumn("Gender");
+                table.AddColumn("Date of Birth");
+                table.AddColumn("Email");
+                table.AddColumn("Phone Number");
+                table.AddColumn("Address");
+
+                table.AddRow(
+                    reader["UserName"].ToString(),
+                    reader["Name"].ToString(),
+                    reader["Gender"].ToString(),
+                    reader["DateOfBirth"].ToString(),
+                    reader["Email"].ToString(),
+                    reader["PhoneNumber"].ToString(),
+                    reader["Address"].ToString()
+                );
+
+                reader.Close();
+
+                AnsiConsole.Write(table);
+            }
+            else
+            {
+                Console.WriteLine("User not found.");
+            }
+        }
+    }
+    static void EditCustomerPersonalInfo(string userName, string connectionString)
+    {
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            connection.Open();
+            string query = "SELECT * FROM users WHERE UserName = @UserName";
+            MySqlCommand command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@UserName", userName);
+            MySqlDataReader reader = command.ExecuteReader();
+
+            if (reader.Read())
+            {
+                var user = new User
+                {
+                    UserName = reader["UserName"].ToString(),
+                    Name = reader["Name"].ToString(),
+                    Gender = reader["Gender"].ToString(),
+                    DateOfBirth = DateTime.Parse(reader["DateOfBirth"].ToString()),
+                    Email = reader["Email"].ToString(),
+                    PhoneNumber = reader["PhoneNumber"].ToString(),
+                    Address = reader["Address"].ToString()
+                };
+                reader.Close();
+
+                Console.WriteLine("Enter new information (leave blank to keep current value):");
+
+                Console.Write($"Name ({user.Name}): ");
+                string newName = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(newName))
+                    user.Name = newName;
+
+                Console.Write($"Gender ({user.Gender}): ");
+                string newGender = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(newGender))
+                    user.Gender = newGender;
+
+                Console.Write($"Date of Birth ({user.DateOfBirth:yyyy-MM-dd}): ");
+                string newDob = Console.ReadLine();
+                if (DateTime.TryParse(newDob, out DateTime parsedDob))
+                    user.DateOfBirth = parsedDob;
+
+                Console.Write($"Email ({user.Email}): ");
+                string newEmail = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(newEmail))
+                    user.Email = newEmail;
+
+                Console.Write($"Phone Number ({user.PhoneNumber}): ");
+                string newPhoneNumber = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(newPhoneNumber))
+                    user.PhoneNumber = newPhoneNumber;
+
+                Console.Write($"Address ({user.Address}): ");
+                string newAddress = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(newAddress))
+                    user.Address = newAddress;
+
+                string updateQuery = "UPDATE users SET Name = @Name, Gender = @Gender, DateOfBirth = @DateOfBirth, Email = @Email, PhoneNumber = @PhoneNumber, Address = @Address WHERE UserName = @UserName";
+                MySqlCommand updateCommand = new MySqlCommand(updateQuery, connection);
+                updateCommand.Parameters.AddWithValue("@Name", user.Name);
+                updateCommand.Parameters.AddWithValue("@Gender", user.Gender);
+                updateCommand.Parameters.AddWithValue("@DateOfBirth", user.DateOfBirth);
+                updateCommand.Parameters.AddWithValue("@Email", user.Email);
+                updateCommand.Parameters.AddWithValue("@PhoneNumber", user.PhoneNumber);
+                updateCommand.Parameters.AddWithValue("@Address", user.Address);
+                updateCommand.Parameters.AddWithValue("@UserName", user.UserName);
+
+                int rowsAffected = updateCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    Console.WriteLine("Personal information updated successfully!");
+                }
+                else
+                {
+                    Console.WriteLine("An error occurred while updating the information.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("User not found.");
+            }
+        }
+    }
     
-    
+    static void DisplayCustomerOrder(int userID, string connectionString)
+{
+    using (MySqlConnection connection = new MySqlConnection(connectionString))
+    {
+        try
+        {
+            connection.Open();
+
+            string query = "SELECT * FROM `order` WHERE UserID = @UserID";
+            MySqlCommand command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@UserID", userID);
+
+            using (MySqlDataReader reader = command.ExecuteReader())
+            {
+                var table = new Table();
+                table.AddColumn("Order ID");
+                table.AddColumn("User ID");
+                table.AddColumn("Product ID");
+                table.AddColumn("Coupon Code");
+                table.AddColumn("Quantity");
+                table.AddColumn("Order Date");
+                table.AddColumn("Shipping Address");
+                table.AddColumn("Total Amount");
+
+                while (reader.Read())
+                {
+                    table.AddRow(
+                        reader["OrderID"].ToString(),
+                        reader["UserID"].ToString(),
+                        reader["ProductID"].ToString(),
+                        reader["CouponCode"].ToString(),
+                        reader["Quantity"].ToString(),
+                        reader["OrderDate"].ToString(),
+                        reader["ShippingAddress"].ToString(),
+                        reader["TotalAmount"].ToString()
+                    );
+                }
+
+                AnsiConsole.Render(table);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+    }
+}
+    static void EditCustomerOrderInfo(int userID, string connectionString)
+{
+    Console.Write("Enter the order ID to edit: ");
+    if (!int.TryParse(Console.ReadLine(), out int orderID))
+    {
+        Console.WriteLine("Invalid order ID.");
+        return;
+    }
+
+    try
+    {
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            connection.Open();
+
+            string query = "SELECT * FROM `order` WHERE OrderID = @OrderID AND UserID = @UserID";
+            MySqlCommand command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@OrderID", orderID);
+            command.Parameters.AddWithValue("@UserID", userID);
+
+            using (MySqlDataReader reader = command.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    Console.WriteLine("Current Order Information:");
+                    Console.WriteLine($"Order ID: {reader["OrderID"]}");
+                    Console.WriteLine($"User ID: {reader["UserID"]}");
+                    Console.WriteLine($"Product ID: {reader["ProductID"]}");
+                    Console.WriteLine($"Coupon Code: {reader["CouponCode"]}");
+                    Console.WriteLine($"Quantity: {reader["Quantity"]}");
+                    Console.WriteLine($"Order Date: {reader["OrderDate"]}");
+                    Console.WriteLine($"Shipping Address: {reader["ShippingAddress"]}");
+                    Console.WriteLine($"Total Amount: {reader["TotalAmount"]}");
+
+                    // Prompt for new values
+                    Console.WriteLine("Enter new information:");
+
+                    Console.Write("Product ID: ");
+                    int newProductID;
+                    if (!int.TryParse(Console.ReadLine(), out newProductID))
+                    {
+                        Console.WriteLine("Invalid Product ID.");
+                        return;
+                    }
+
+                    Console.Write("Coupon Code: ");
+                    string newCouponCode = Console.ReadLine();
+
+                    Console.Write("Quantity: ");
+                    int newQuantity;
+                    if (!int.TryParse(Console.ReadLine(), out newQuantity))
+                    {
+                        Console.WriteLine("Invalid Quantity.");
+                        return;
+                    }
+
+                    Console.Write("Order Date (yyyy-MM-dd): ");
+                    DateTime newOrderDate;
+                    if (!DateTime.TryParse(Console.ReadLine(), out newOrderDate))
+                    {
+                        Console.WriteLine("Invalid Order Date.");
+                        return;
+                    }
+
+                    Console.Write("Shipping Address: ");
+                    string newShippingAddress = Console.ReadLine();
+
+                    Console.Write("Total Amount: ");
+                    decimal newTotalAmount;
+                    if (!decimal.TryParse(Console.ReadLine(), out newTotalAmount))
+                    {
+                        Console.WriteLine("Invalid Total Amount.");
+                        return;
+                    }
+
+                    reader.Close(); // Close the reader before updating
+
+                    // Update the order in the database
+                    string updateQuery = "UPDATE `order` SET ProductID = @ProductID, CouponCode = @CouponCode, Quantity = @Quantity, OrderDate = @OrderDate, ShippingAddress = @ShippingAddress, TotalAmount = @TotalAmount WHERE OrderID = @OrderID AND UserID = @UserID";
+                    MySqlCommand updateCommand = new MySqlCommand(updateQuery, connection);
+                    updateCommand.Parameters.AddWithValue("@ProductID", newProductID);
+                    updateCommand.Parameters.AddWithValue("@CouponCode", newCouponCode);
+                    updateCommand.Parameters.AddWithValue("@Quantity", newQuantity);
+                    updateCommand.Parameters.AddWithValue("@OrderDate", newOrderDate);
+                    updateCommand.Parameters.AddWithValue("@ShippingAddress", newShippingAddress);
+                    updateCommand.Parameters.AddWithValue("@TotalAmount", newTotalAmount);
+                    updateCommand.Parameters.AddWithValue("@OrderID", orderID);
+                    updateCommand.Parameters.AddWithValue("@UserID", userID);
+
+                    int rowsAffected = updateCommand.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                    {
+                        Console.WriteLine("Order information updated successfully!");
+                    }
+                    else
+                    {
+                        Console.WriteLine("No rows were updated. Please check the Order ID or ensure it belongs to the current user.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Order with ID {orderID} not found for user {userID}.");
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred: {ex.Message}");
+    }
+}
+
     static void AdminMenu()
     {
         while (true)
         {
-            AnsiConsole.Clear();
             var choice = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("[green]MENU[/]")
@@ -1006,6 +1292,7 @@ class Program
                     {
                         "View Customer Information List",
                         "Edit Customer Information",
+                        "Delete Customer Information",
                         "Search Customer",
                         "Return",
                         "",
@@ -1022,6 +1309,9 @@ class Program
                     break;
                 case "Search Customer":
                     SearchCustomerByUserName(customerList, connectionString);
+                    break;
+                case "Delete Customer Information":
+                    DeleteCustomerInfo(customerList, connectionString);
                     break;
                 case "Return":
                     return;
@@ -1050,15 +1340,15 @@ class Program
                         "Edit Product Information",
                         "Delete Product Information",
                         "Search Product",
-                        "Return",
                         "",
+                        "Return",
                         "Exit"
                     }));
 
             switch (choice)
             {
                 case "View Product List":
-                    DisplayProduct(productList);
+                    DisplayProduct(productList,connectionString);
                     break;
                 case "Add Product":
                     AddProduct(productList);
@@ -1107,7 +1397,7 @@ class Program
             switch (choice)
             {
                 case "View Category List":
-                    DisplayCategory(categoryList);
+                    DisplayCategory(categoryList, connectionString);
                     break;
                 case "Add Category":
                     AddCategory(categoryList);
@@ -1155,19 +1445,19 @@ class Program
 
             switch (choice)
             {
-                case "1. View Coupon List":
+                case "View Coupon List":
                     DisplayCoupons(couponList);
                     break;
-                case "2. Add Coupon":
+                case "Add Coupon":
                     AddCoupon(couponList);
                     break;
-                case "3. Edit Coupon Information":
+                case "Edit Coupon Information":
                     EditCouponInfo(couponList, connectionString);
                     break;
-                case "4. Delete Coupon":
+                case "Delete Coupon":
                     DeleteCoupon(couponList, connectionString);
                     break;
-                case "5. Search Coupon":
+                case "Search Coupon":
                     SearchCouponByID(couponList, connectionString);
                     break;
                 case "Return":
@@ -1525,95 +1815,41 @@ class Program
             }
         }
     }
-
-    static void DisplayCustomerPersonalInfo(string currentUser, string connectionString)
+    
+    static void PopulateCustomerList(List<User> customerList, string connectionString)
     {
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        customerList.Clear(); // Clear existing list before populating
+        try
         {
-            string query = "SELECT * FROM users WHERE UserName = @CurrentUser";
-            MySqlCommand command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@CurrentUser", currentUser);
-
-            connection.Open();
-            MySqlDataReader reader = command.ExecuteReader();
-
-            var table = new Table();
-            table.AddColumn("UserName");
-            table.AddColumn("Name");
-            table.AddColumn("Gender");
-            table.AddColumn("Date of Birth");
-            table.AddColumn("Email");
-            table.AddColumn("Phone Number");
-            table.AddColumn("Address");
-
-            while (reader.Read())
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
-                table.AddRow(
-                    reader["UserName"].ToString(),
-                    reader["Name"].ToString(),
-                    reader["Gender"].ToString(),
-                    reader["DateOfBirth"].ToString(),
-                    reader["Email"].ToString(),
-                    reader["PhoneNumber"].ToString(),
-                    reader["Address"].ToString()
-                );
-            }
-            reader.Close();
-            AnsiConsole.Write(table);
-        }
-    }
-    static void EditCustomerPersonalInfo(string currentUser, string connectionString)
-    {
-        List<User> customerList = new List<User>();
-        PopulateCustomerList(customerList, connectionString);
+                connection.Open();
+                string query = "SELECT * FROM users";
+                MySqlCommand command = new MySqlCommand(query, connection);
 
-        User customer = customerList.FirstOrDefault();
-        if (customer != null)
-        {
-            Console.WriteLine("Enter new information: ");
-            Console.Write("Enter new name: ");
-            string newName = Console.ReadLine();
-            customer.Name = newName;
-
-            // (Tiếp tục cập nhật thông tin như trong code ban đầu)
-
-            try
-            {
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                using (MySqlDataReader reader = command.ExecuteReader())
                 {
-                    connection.Open();
-                    string query = "UPDATE users SET Name = @NewName, Gender = @Gender, DateOfBirth = @DateOfBirth, Email = @Email, PhoneNumber = @PhoneNumber, Address = @Address WHERE UserName = @CurrentUser";
-                    MySqlCommand command = new MySqlCommand(query, connection);
-                    command.Parameters.AddWithValue("@NewName", customer.Name);
-                    command.Parameters.AddWithValue("@Gender", customer.Gender);
-                    command.Parameters.AddWithValue("@DateOfBirth", customer.DateOfBirth);
-                    command.Parameters.AddWithValue("@Email", customer.Email);
-                    command.Parameters.AddWithValue("@PhoneNumber", customer.PhoneNumber);
-                    command.Parameters.AddWithValue("@Address", customer.Address);
-                    command.Parameters.AddWithValue("@CurrentUser", currentUser);
+                    while (reader.Read())
+                    {
+                        User customer = new User();
+                        customer.UserID = reader.GetInt32("UserID");
+                        customer.Name = reader.GetString("Name");
+                        customer.Gender = reader.GetString("Gender");
+                        customer.DateOfBirth = reader.GetDateTime("DateOfBirth");
+                        customer.Email = reader.GetString("Email");
+                        customer.PhoneNumber = reader.GetString("PhoneNumber");
+                        customer.Address = reader.GetString("Address");
 
-                    int rowsAffected = command.ExecuteNonQuery();
-                    if (rowsAffected > 0)
-                    {
-                        Console.WriteLine("Customer information updated successfully!");
-                    }
-                    else
-                    {
-                        Console.WriteLine("No rows were updated. Please check the customer name.");
+                        customerList.Add(customer);
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("An error occurred: " + ex.Message);
-            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine("No customer found with this username.");
+            Console.WriteLine("An error occurred while populating customer list: " + ex.Message);
         }
     }
-
     static void DisplayCustomerInfo(List<User> customerList)
     {
         using (MySqlConnection connection = new MySqlConnection(connectionString))
@@ -1627,7 +1863,7 @@ class Program
             var table = new Table();
 
             // Add some columns
-            table.AddColumn("UserName");
+            table.AddColumn("UserID");
             table.AddColumn("Name");
             table.AddColumn("Gender");
             table.AddColumn("Date of Birth");
@@ -1639,7 +1875,7 @@ class Program
             while (reader.Read())
             {
                 table.AddRow(
-                    reader["UserName"].ToString(),
+                    reader["UserID"].ToString(),
                     reader["Name"].ToString(),
                     reader["Gender"].ToString(),
                     reader["DateOfBirth"].ToString(),
@@ -1659,124 +1895,166 @@ class Program
         // Populate customer list from database
         PopulateCustomerList(customerList, connectionString);
 
-        Console.Write("Enter the customer name to edit: ");
-        string customerName = Console.ReadLine();
+        Console.Write("Enter UserID of the customer to edit: ");
+        int customerId = int.Parse(Console.ReadLine());
 
         // Find the customer in the list
-        User customer = customerList.Find(c => c.Name == customerName);
+        User customer = customerList.Find(c => c.UserID == customerId);
 
         if (customer != null)
         {
             Console.WriteLine("Enter new information: ");
-            Console.Write("Enter new name: ");
-            string newName = Console.ReadLine();
-            customer.Name = newName; // Update customer's name
-            
-            Console.Write("Enter gender: ");
-            customer.Gender = Console.ReadLine();
-            
-            Console.Write("Enter date of birth (yyyy-MM-dd): ");
-            if (DateTime.TryParse(Console.ReadLine(), out DateTime dateOfBirth))
+            string newName;
+            do
             {
-                customer.DateOfBirth = dateOfBirth;
-            }
-            else
+                Console.Write("Enter new name: ");
+                newName = Console.ReadLine();
+            } while (!IsValidName(newName));
+            customer.Name = newName;
+            string gender;
+            do
             {
-                Console.WriteLine("Invalid date format. Update cancelled.");
-                return;
-            }
+                Console.Write("Enter gender (male, female, others): ");
+                gender = Console.ReadLine();
+            } while (!IsValidGender(gender));
+            customer.Gender = gender;
             
-            Console.Write("Enter email address: ");
-            customer.Email = Console.ReadLine();
-            
-            Console.Write("Enter phone number: ");
-            customer.PhoneNumber = Console.ReadLine();
-            
+            string dateOfBirthStr;
+            do
+            {
+                Console.Write("Enter date of birth (yyyy-MM-dd): ");
+                dateOfBirthStr = Console.ReadLine();
+            } while (!IsValidDateOfBirth(dateOfBirthStr));
+            customer.DateOfBirth = DateTime.Parse(dateOfBirthStr);
+
+            // Enter email address
+            string email;
+            do
+            {
+                Console.Write("Enter email address: ");
+                email = Console.ReadLine();
+            } while (!IsValidEmail(email) || IsEmailExists(email));
+            customer.Email = email;
+
+            // Enter phone number
+            string phoneNumber;
+            do
+            {
+                Console.Write("Enter phone number: ");
+                phoneNumber = Console.ReadLine();
+            } while (!IsValidPhoneNumber(phoneNumber) || IsPhoneNumberExists(phoneNumber));
+            customer.PhoneNumber = phoneNumber;
+
             Console.Write("Enter address: ");
             customer.Address = Console.ReadLine();
 
+            // Display the entered information for confirmation
+            Console.WriteLine("\nYou have entered the following information:");
+            Console.WriteLine($"Name: {customer.Name}");
+            Console.WriteLine($"Gender: {customer.Gender}");
+            Console.WriteLine($"Date of Birth: {customer.DateOfBirth:yyyy-MM-dd}");
+            Console.WriteLine($"Email: {customer.Email}");
+            Console.WriteLine($"Phone Number: {customer.PhoneNumber}");
+            Console.WriteLine($"Address: {customer.Address}");
+            string confirmation;
+            do
+            {
+                Console.Write("Are you sure you want to update this customer information? (yes/no): ");
+                confirmation = Console.ReadLine().ToLower();
+            } while (confirmation != "yes" && confirmation != "no");
+
+            if (confirmation == "yes"||confirmation == "Yes")
+            {
+                try
+                {
+                    using (MySqlConnection connection = new MySqlConnection(connectionString))
+                    {
+                        connection.Open();
+                        string query = "UPDATE users SET Name = @NewName, Gender = @Gender, DateOfBirth = @DateOfBirth, Email = @Email, PhoneNumber = @PhoneNumber, Address = @Address WHERE UserID = @CustomerID";
+                        MySqlCommand command = new MySqlCommand(query, connection);
+                        command.Parameters.AddWithValue("@NewName", customer.Name);
+                        command.Parameters.AddWithValue("@Gender", customer.Gender);
+                        command.Parameters.AddWithValue("@DateOfBirth", customer.DateOfBirth);
+                        command.Parameters.AddWithValue("@Email", customer.Email);
+                        command.Parameters.AddWithValue("@PhoneNumber", customer.PhoneNumber);
+                        command.Parameters.AddWithValue("@Address", customer.Address);
+                        command.Parameters.AddWithValue("@CustomerID", customerId);
+
+                        int rowsAffected = command.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine("Customer information updated successfully!");
+
+                            // Update local customer list
+                            PopulateCustomerList(customerList, connectionString);
+                        }
+                        else
+                        {
+                            Console.WriteLine("No rows were updated. Please check the customer ID.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred: " + ex.Message);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Update operation cancelled.");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Customer with ID '{customerId}' not found in the list.");
+        }
+    }
+    static void DeleteCustomerInfo(List<User> customerList, string connectionString)
+    {
+        Console.WriteLine("Enter User ID to delete: ");
+        int userID = int.Parse(Console.ReadLine());
+
+        string confirmation;
+        do
+        {
+            Console.Write("Are you sure you want to delete this user? (yes/no): ");
+            confirmation = Console.ReadLine().ToLower();
+        } while (confirmation != "yes" && confirmation != "no");
+
+        if (confirmation == "yes"||confirmation == "Yes")
+        {
             try
             {
                 using (MySqlConnection connection = new MySqlConnection(connectionString))
                 {
                     connection.Open();
-                    string query = "UPDATE users SET Name = @NewName, Gender = @Gender, DateOfBirth = @DateOfBirth, Email = @Email, PhoneNumber = @PhoneNumber, Address = @Address WHERE Name = @CustomerName";
-                    MySqlCommand command = new MySqlCommand(query, connection);
-                    command.Parameters.AddWithValue("@NewName", customer.Name); // New name parameter
-                    command.Parameters.AddWithValue("@Gender", customer.Gender);
-                    command.Parameters.AddWithValue("@DateOfBirth", customer.DateOfBirth);
-                    command.Parameters.AddWithValue("@Email", customer.Email);
-                    command.Parameters.AddWithValue("@PhoneNumber", customer.PhoneNumber);
-                    command.Parameters.AddWithValue("@Address", customer.Address);
-                    command.Parameters.AddWithValue("@CustomerName", customerName); // Customer's current name as condition
-
-                    int rowsAffected = command.ExecuteNonQuery();
-
-                    if (rowsAffected > 0)
-                    {
-                        Console.WriteLine("Customer information updated successfully!");
-
-                        // Update local customer list
-                        PopulateCustomerList(customerList, connectionString);
-                    }
-                    else
-                    {
-                        Console.WriteLine("No rows were updated. Please check the customer name.");
-                    }
+                    string query = "DELETE FROM users WHERE UserID = @UserID";
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
+                    cmd.Parameters.AddWithValue("@UserID", userID);
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    Console.WriteLine(rowsAffected + " user(s) deleted from the database.");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred: " + ex.Message);
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
         else
         {
-            Console.WriteLine($"Customer with name '{customerName}' not found in the list.");
-        }
-    }
-    static void PopulateCustomerList(List<User> customerList, string connectionString)
-    {
-        customerList.Clear(); // Clear existing list before populating
-        try
-        {
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
-            {
-                connection.Open();
-                string query = "SELECT * FROM users";
-                MySqlCommand command = new MySqlCommand(query, connection);
-
-                using (MySqlDataReader reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        User customer = new User();
-                        customer.Name = reader.GetString("Name");
-                        customer.Gender = reader.GetString("Gender");
-                        customer.DateOfBirth = reader.GetDateTime("DateOfBirth");
-                        customer.Email = reader.GetString("Email");
-                        customer.PhoneNumber = reader.GetString("PhoneNumber");
-                        customer.Address = reader.GetString("Address");
-
-                        customerList.Add(customer);
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("An error occurred while populating customer list: " + ex.Message);
+            Console.WriteLine("Delete operation cancelled.");
         }
     }
     static void SearchCustomerByUserName(List<User> customerList, string connectionString)
     {
-        string userName = AnsiConsole.Ask<string>("Enter [green]customer username[/] to find:");
+        string userID = AnsiConsole.Ask<string>("Enter [green]customer UserID[/] to find:");
 
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
-            string query = "SELECT * FROM users WHERE UserName = @UserName";
+            string query = "SELECT * FROM users WHERE UserID = @UserID";
             MySqlCommand command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@UserName", userName);
+            command.Parameters.AddWithValue("@UserID", userID);
 
             connection.Open();
             using (MySqlDataReader reader = command.ExecuteReader())
@@ -1792,6 +2070,7 @@ class Program
                     table.AddColumn("Address");
 
                     table.AddRow(
+                        reader["UserID"].ToString(),
                         reader["Name"].ToString(),
                         reader["Gender"].ToString(),
                         reader["DateOfBirth"].ToString(),
@@ -1810,8 +2089,41 @@ class Program
         }
     }
 
-    
-    static void DisplayProduct(List<Product> productList)
+    static List<Product> LoadProductsFromDatabase(string connectionString)
+    {
+        List<Product> products = new List<Product>();
+
+        try
+        {
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = "SELECT ProductID, CategoryID, ProductName, Description, Price FROM product";
+                MySqlCommand command = new MySqlCommand(query, connection);
+                MySqlDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    Product product = new Product
+                    {
+                        ProductID = reader.GetInt32("ProductID"),
+                        CategoryID = reader.GetInt32("CategoryID"),
+                        ProductName = reader.GetString("ProductName"),
+                        Description = reader.GetString("Description"),
+                        Price = reader.GetInt32("Price")
+                    };
+                    products.Add(product);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("An error occurred while loading products: " + ex.Message);
+        }
+
+        return products;
+    }
+    static void DisplayProduct(List<Product> productList, string connectionString)
     {
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
@@ -1851,16 +2163,74 @@ class Program
     {
         Console.WriteLine("Enter information for the new product: ");
         Product product = new Product();
-        Console.Write("Enter product ID: ");
-        product.ProductID = int.Parse(Console.ReadLine());
-        Console.Write("Enter category ID: ");
-        product.CategoryID = int.Parse(Console.ReadLine());
-        Console.Write("Enter product name: ");
-        product.ProductName = Console.ReadLine();
+
+        // Enter product ID
+        while (true)
+        {
+            Console.Write("Enter product ID: ");
+            string input = Console.ReadLine();
+            if (int.TryParse(input, out int productId) && productId > 0)
+            {
+                product.ProductID = productId;
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Invalid product ID. Please enter a positive integer.");
+            }
+        }
+
+        // Enter category ID
+        while (true)
+        {
+            Console.Write("Enter category ID: ");
+            string input = Console.ReadLine();
+            if (int.TryParse(input, out int categoryId) && categoryId > 0)
+            {
+                product.CategoryID = categoryId;
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Invalid category ID. Please enter a positive integer.");
+            }
+        }
+
+        // Enter product name
+        while (true)
+        {
+            Console.Write("Enter product name: ");
+            string productName = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(productName))
+            {
+                product.ProductName = productName;
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Product name cannot be blank.");
+            }
+        }
+
+        // Enter description
         Console.Write("Enter description: ");
         product.Description = Console.ReadLine();
-        Console.Write("Enter price: ");
-        product.Price = int.Parse(Console.ReadLine());
+
+        // Enter price
+        while (true)
+        {
+            Console.Write("Enter price: ");
+            string input = Console.ReadLine();
+            if (int.TryParse(input, out int price) && price >= 0)
+            {
+                product.Price = price;
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Invalid price. Please enter a non-negative integer.");
+            }
+        }
 
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
@@ -1877,40 +2247,6 @@ class Program
 
         productList.Add(product);
         Console.WriteLine("Product added successfully!");
-    }
-    static List<Product> LoadProductsFromDatabase(string connectionString)
-    {
-        List<Product> products = new List<Product>();
-
-        try
-        {
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
-            {
-                connection.Open();
-                string query = "SELECT ProductID, CategoryID, ProductName, Description, Price FROM product";
-                MySqlCommand command = new MySqlCommand(query, connection);
-                MySqlDataReader reader = command.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    Product product = new Product
-                    {
-                        ProductID = reader.GetInt32("ProductID"),
-                        CategoryID = reader.GetInt32("CategoryID"),
-                        ProductName = reader.GetString("ProductName"),
-                        Description = reader.GetString("Description"),
-                        Price = reader.GetInt32("Price")
-                    };
-                    products.Add(product);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("An error occurred while loading products: " + ex.Message);
-        }
-
-        return products;
     }
     static void EditProductInfo(List<Product> productList, string connectionString)
     {
@@ -1954,40 +2290,28 @@ class Program
             Console.Write("\nDo you want to update the product information? (yes/no): ");
             string confirmation = Console.ReadLine().Trim().ToLower();
 
-            if (confirmation == "yes" || confirmation =="Yes" )
+            if (confirmation == "yes" || confirmation == "yes")
             {
-                product.CategoryID = categoryID;
-                product.ProductName = productName;
-                product.Description = description;
-                product.Price = price;
-
-                try
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
                 {
-                    using (MySqlConnection connection = new MySqlConnection(connectionString))
+                    connection.Open();
+                    string query = "UPDATE product SET CategoryID = @CategoryID, ProductName = @ProductName, Description = @Description, Price = @Price WHERE ProductID = @ProductID";
+                    MySqlCommand command = new MySqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@ProductID", product.ProductID);
+                    command.Parameters.AddWithValue("@CategoryID", categoryID);
+                    command.Parameters.AddWithValue("@ProductName", productName);
+                    command.Parameters.AddWithValue("@Description", description);
+                    command.Parameters.AddWithValue("@Price", price);
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
                     {
-                        connection.Open();
-                        string query = "UPDATE product SET CategoryID = @CategoryID, ProductName = @ProductName, Description = @Description, Price = @Price WHERE ProductID = @ProductID";
-                        MySqlCommand command = new MySqlCommand(query, connection);
-                        command.Parameters.AddWithValue("@ProductID", product.ProductID);
-                        command.Parameters.AddWithValue("@CategoryID", product.CategoryID);
-                        command.Parameters.AddWithValue("@ProductName", product.ProductName);
-                        command.Parameters.AddWithValue("@Description", product.Description);
-                        command.Parameters.AddWithValue("@Price", product.Price);
-                        int rowsAffected = command.ExecuteNonQuery();
-
-                        if (rowsAffected > 0)
-                        {
-                            Console.WriteLine("Product information updated successfully!");
-                        }
-                        else
-                        {
-                            Console.WriteLine("No rows were updated. Please check the Product ID.");
-                        }
+                        Console.WriteLine("Product information updated successfully!");
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("An error occurred: " + ex.Message);
+                    else
+                    {
+                        Console.WriteLine("No rows were updated. Please check the Product ID.");
+                    }
                 }
             }
             else
@@ -2005,21 +2329,35 @@ class Program
         Console.WriteLine("Enter product ID to delete: ");
         int productID = int.Parse(Console.ReadLine());
 
-        try
+        string confirmation;
+        do
         {
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            Console.Write("Are you sure you want to delete this product? (yes/no): ");
+            confirmation = Console.ReadLine().ToLower();
+        } while (confirmation != "yes" && confirmation != "no");
+
+        if (confirmation == "yes"||confirmation == "Yes")
+        {
+            try
             {
-                connection.Open();
-                string query = "DELETE FROM product WHERE ProductID = @ProductID";
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                cmd.Parameters.AddWithValue("@ProductID", productID);
-                int rowsAffected = cmd.ExecuteNonQuery();
-                Console.WriteLine(rowsAffected + " product(s) deleted from the database.");
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "DELETE FROM product WHERE ProductID = @ProductID";
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
+                    cmd.Parameters.AddWithValue("@ProductID", productID);
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    Console.WriteLine(rowsAffected + " product(s) deleted from the database.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine("Error: " + ex.Message);
+            Console.WriteLine("Delete operation cancelled.");
         }
     }
     static void SearchProductByID(List<Product> productList, string connectionString)
@@ -2133,7 +2471,7 @@ class Program
 
         return categories;
     }
-    static void DisplayCategory(List<CategoryOfProduct> categoryList)
+    static void DisplayCategory(List<CategoryOfProduct> categoryList, string connectionString)
     {
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
@@ -2232,24 +2570,49 @@ class Program
 
                 if (!string.IsNullOrEmpty(newCategoryName))
                 {
-                    category.CategoryName = newCategoryName;
+                    // Confirm the edit with the user
+                    string confirmation;
+                    do
+                    {
+                        Console.Write("Are you sure you want to edit this category? (yes/no): ");
+                        confirmation = Console.ReadLine().ToLower();
+                    } while (confirmation != "yes" && confirmation != "no");
 
-                    try
+                    if (confirmation == "yes"||confirmation == "Yes")
                     {
-                        using (MySqlConnection connection = new MySqlConnection(connectionString))
+                        // Update the category name in the list
+                        category.CategoryName = newCategoryName;
+
+                        try
                         {
-                            connection.Open();
-                            string query = "UPDATE category SET CategoryName = @CategoryName WHERE CategoryID = @CategoryID";
-                            MySqlCommand command = new MySqlCommand(query, connection);
-                            command.Parameters.AddWithValue("@CategoryID", category.CategoryID);
-                            command.Parameters.AddWithValue("@CategoryName", category.CategoryName);
-                            command.ExecuteNonQuery();
+                            using (MySqlConnection connection = new MySqlConnection(connectionString))
+                            {
+                                connection.Open();
+                                string query = "UPDATE category SET CategoryName = @CategoryName WHERE CategoryID = @CategoryID";
+                                MySqlCommand command = new MySqlCommand(query, connection);
+                                command.Parameters.AddWithValue("@CategoryID", category.CategoryID);
+                                command.Parameters.AddWithValue("@CategoryName", category.CategoryName);
+                                int rowsAffected = command.ExecuteNonQuery();
+                                
+                                // Check if any rows were affected
+                                if (rowsAffected > 0)
+                                {
+                                    Console.WriteLine("Category information updated successfully!");
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Category update operation did not affect any rows.");
+                                }
+                            }
                         }
-                        Console.WriteLine("Category information updated successfully!");
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("An error occurred while updating the category: " + ex.Message);
+                        }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Console.WriteLine("An error occurred while updating the category: " + ex.Message);
+                        Console.WriteLine("Edit operation cancelled.");
                     }
                 }
                 else
@@ -2272,21 +2635,35 @@ class Program
         Console.WriteLine("Enter category ID to delete: ");
         int categoryID = int.Parse(Console.ReadLine());
 
-        try
+        string confirmation;
+        do
         {
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            Console.Write("Are you sure you want to delete this category? (yes/no): ");
+            confirmation = Console.ReadLine().ToLower();
+        } while (confirmation != "yes" && confirmation != "no");
+
+        if (confirmation == "yes"||confirmation == "Yes")
+        {
+            try
             {
-                connection.Open();
-                string query = "DELETE FROM category WHERE CategoryID = @CategoryID";
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                cmd.Parameters.AddWithValue("@CategoryID", categoryID);
-                int rowsAffected = cmd.ExecuteNonQuery();
-                Console.WriteLine(rowsAffected + " category(s) deleted from the database.");
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "DELETE FROM category WHERE CategoryID = @CategoryID";
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
+                    cmd.Parameters.AddWithValue("@CategoryID", categoryID);
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    Console.WriteLine(rowsAffected + " category(s) deleted from the database.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine("Error: " + ex.Message);
+            Console.WriteLine("Delete operation cancelled.");
         }
     }
     static void SearchCategoryByID(List<CategoryOfProduct> categoryList, string connectionString)
@@ -2323,30 +2700,40 @@ class Program
         }
     }
 
-    static List<Warehouse> LoadWarehouses(string connectionString)
+    static void PopulateWarehouseList(List<Warehouse> warehouseList, string connectionString)
     {
-        List<Warehouse> warehouses = new List<Warehouse>();
+        warehouseList.Clear(); // Xóa danh sách hiện tại để nạp lại dữ liệu mới
 
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        try
         {
-            string query = "SELECT * FROM warehouse";
-            MySqlCommand command = new MySqlCommand(query, connection);
-            connection.Open();
-            MySqlDataReader reader = command.ExecuteReader();
-
-            while (reader.Read())
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
-                Warehouse warehouse = new Warehouse
+                connection.Open();
+                string query = "SELECT * FROM warehouse";
+                MySqlCommand command = new MySqlCommand(query, connection);
+
+                using (MySqlDataReader reader = command.ExecuteReader())
                 {
-                    WareHouseID = int.Parse(reader["WarehouseID"].ToString()),
-                    ProductID = int.Parse(reader["ProductID"].ToString()),
-                    Quantity = int.Parse(reader["quantity"].ToString())
-                };
-                warehouses.Add(warehouse);
+                    while (reader.Read())
+                    {
+                        Warehouse warehouse = new Warehouse
+                        {
+                            WareHouseID = Convert.ToInt32(reader["WarehouseID"]),
+                            ProductID = Convert.ToInt32(reader["ProductID"]),
+                            Quantity = Convert.ToInt32(reader["Quantity"])
+                        };
+
+                        warehouseList.Add(warehouse);
+                    }
+
+                    reader.Close();
+                }
             }
-            reader.Close();
         }
-        return warehouses;
+        catch (Exception ex)
+        {
+            Console.WriteLine("An error occurred while populating warehouse list: " + ex.Message);
+        }
     } 
     static void DisplayWarehouse(List<Warehouse> warehouseList)
     {
@@ -2407,33 +2794,110 @@ class Program
     }
     static void EditWarehouseInfo(List<Warehouse> warehouseList, string connectionString)
     {
-        Console.WriteLine("Enter warehouse ID to edit: ");
-        int warehouseID = int.Parse(Console.ReadLine());
-        Warehouse wh = warehouseList.Find(w => w.WareHouseID == warehouseID);
-        if (wh != null)
-        {
-            Console.WriteLine("Enter new information: ");
-            Console.Write("Enter product name: ");
-            wh.ProductID = int.Parse(Console.ReadLine());
-            Console.Write("Enter quantity: ");
-            wh.Quantity = int.Parse(Console.ReadLine());
+        // Populate warehouse list from the database to ensure it's up-to-date
+        PopulateWarehouseList(warehouseList, connectionString);
 
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+        Console.WriteLine("Enter warehouse ID to edit: ");
+        if (int.TryParse(Console.ReadLine(), out int warehouseID))
+        {
+            // Find warehouse based on WarehouseID in the list
+            Warehouse wh = warehouseList.FirstOrDefault(w => w.WareHouseID == warehouseID);
+
+            if (wh != null)
             {
-                connection.Open();
-                string query = "UPDATE warehouse SET ProductID=@ProductID, Quantity=@Quantity WHERE WareHouseID=@WarehouseID";
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@WarehouseID", wh.WareHouseID);
-                command.Parameters.AddWithValue("@ProductID", wh.ProductID);
-                command.Parameters.AddWithValue("@Quantity", wh.Quantity);
-                command.ExecuteNonQuery();
+                Console.WriteLine("Current Warehouse Information:");
+                Console.WriteLine($"Warehouse ID: {wh.WareHouseID}, Product ID: {wh.ProductID}, Quantity: {wh.Quantity}");
+
+                Console.WriteLine("Enter new information: ");
+
+                Console.Write("Enter new warehouse ID: ");
+                if (int.TryParse(Console.ReadLine(), out int newWarehouseID))
+                {
+                    wh.WareHouseID = newWarehouseID;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input for warehouse ID. Update cancelled.");
+                    return;
+                }
+
+                Console.Write("Enter new product ID: ");
+                if (int.TryParse(Console.ReadLine(), out int newProductID))
+                {
+                    wh.ProductID = newProductID;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input for product ID. Update cancelled.");
+                    return;
+                }
+
+                Console.Write("Enter new quantity: ");
+                if (int.TryParse(Console.ReadLine(), out int newQuantity))
+                {
+                    wh.Quantity = newQuantity;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input for quantity. Update cancelled.");
+                    return;
+                }
+
+                // Confirmation before updating warehouse information
+                string confirmation;
+                do
+                {
+                    Console.Write("Are you sure you want to update this warehouse information? (yes/no): ");
+                    confirmation = Console.ReadLine().ToLower();
+                } while (confirmation != "yes" && confirmation != "no");
+
+                if (confirmation == "yes")
+                {
+                    try
+                    {
+                        // Update warehouse information in the database
+                        using (MySqlConnection connection = new MySqlConnection(connectionString))
+                        {
+                            connection.Open();
+                            string query = "UPDATE warehouse SET WarehouseID = @NewWarehouseID, ProductID = @ProductID, Quantity = @Quantity WHERE WarehouseID = @OldWarehouseID";
+                            MySqlCommand command = new MySqlCommand(query, connection);
+                            command.Parameters.AddWithValue("@NewWarehouseID", wh.WareHouseID);
+                            command.Parameters.AddWithValue("@ProductID", wh.ProductID);
+                            command.Parameters.AddWithValue("@Quantity", wh.Quantity);
+                            command.Parameters.AddWithValue("@OldWarehouseID", warehouseID);
+
+                            int rowsUpdated = command.ExecuteNonQuery();
+                            if (rowsUpdated > 0)
+                            {
+                                Console.WriteLine("Warehouse information updated successfully!");
+
+                                // Reload warehouse list from the database
+                                PopulateWarehouseList(warehouseList, connectionString);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Failed to update warehouse information. No rows affected.");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("An error occurred while updating warehouse information: " + ex.Message);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Update operation cancelled.");
+                }
             }
-            warehouseList.Add(wh);
-            Console.WriteLine("Warehouse information updated successfully!");
+            else
+            {
+                Console.WriteLine($"Warehouse with ID {warehouseID} not found in the list. Please check the ID and try again.");
+            }
         }
         else
         {
-            Console.WriteLine("Warehouse with this ID not found.");
+            Console.WriteLine("Invalid warehouse ID. Please enter a valid number.");
         }
     }
     static void DeleteWarehouseInfo(List<Warehouse> warehouseList, string connectionString)
@@ -2441,21 +2905,36 @@ class Program
         Console.WriteLine("Enter warehouse ID to delete: ");
         int warehouseID = int.Parse(Console.ReadLine());
 
-        try
+        // Confirmation before deleting warehouse
+        string confirmation;
+        do
         {
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            Console.Write("Are you sure you want to delete this warehouse? (yes/no): ");
+            confirmation = Console.ReadLine().ToLower();
+        } while (confirmation != "yes" && confirmation != "no");
+
+        if (confirmation == "yes")
+        {
+            try
             {
-                connection.Open();
-                string query = "DELETE FROM warehouse WHERE WarehouseID = @WarehouseID";
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                cmd.Parameters.AddWithValue("@WarehouseID", warehouseID);
-                int rowsAffected = cmd.ExecuteNonQuery();
-                Console.WriteLine(rowsAffected + " warehouse(s) deleted from the database.");
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "DELETE FROM warehouse WHERE WarehouseID = @WarehouseID";
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
+                    cmd.Parameters.AddWithValue("@WarehouseID", warehouseID);
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    Console.WriteLine(rowsAffected + " warehouse(s) deleted from the database.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine("Error: " + ex.Message);
+            Console.WriteLine("Delete operation cancelled.");
         }
     }
     static void SearchWarehouseByID(List<Warehouse> warehouseList, string connectionString)
@@ -2494,31 +2973,30 @@ class Program
         }
     }
     
-    static List<Coupon> LoadCoupons(string connectionString)
+    static void PopulateCouponList(List<Coupon> couponList, string connectionString)
     {
-        List<Coupon> coupons = new List<Coupon>();
+        couponList.Clear(); // Clear existing data to refresh from database
 
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
-            string query = "SELECT * FROM coupon";
-            MySqlCommand command = new MySqlCommand(query, connection);
             connection.Open();
-            MySqlDataReader reader = command.ExecuteReader();
+            string query = "SELECT id_coupon, coupon_code, discount_amount, is_active FROM coupon";
+            MySqlCommand command = new MySqlCommand(query, connection);
 
-            while (reader.Read())
+            using (MySqlDataReader reader = command.ExecuteReader())
             {
-                Coupon coupon = new Coupon
+                while (reader.Read())
                 {
-                    CouponID = int.Parse(reader["id_coupon"].ToString()),
-                    CouponCode = reader["coupon_code"].ToString(),
-                    DiscountAmount = decimal.Parse(reader["discount_amount"].ToString()),
-                    IsActive = bool.Parse(reader["is_active"].ToString())
-                };
-                coupons.Add(coupon);
+                    Coupon coupon = new Coupon();
+                    coupon.CouponID = reader.GetInt32("id_coupon");
+                    coupon.CouponCode = reader.GetString("coupon_code");
+                    coupon.DiscountAmount = reader.GetDecimal("discount_amount");
+                    coupon.IsActive = reader.GetBoolean("is_active");
+
+                    couponList.Add(coupon);
+                }
             }
-            reader.Close();
         }
-        return coupons;
     }
     static void DisplayCoupons(List<Coupon> couponList)
     {
@@ -2578,64 +3056,148 @@ class Program
         Console.WriteLine("Coupon added successfully!");
     }
     static void EditCouponInfo(List<Coupon> couponList, string connectionString)
+{
+    Console.Write("Enter the coupon ID to edit: ");
+    if (!int.TryParse(Console.ReadLine(), out int couponID))
     {
-        Console.Write("Enter the coupon ID to edit: ");
-        int couponID = int.Parse(Console.ReadLine());
-        Coupon coupon = couponList.Find(c => c.CouponID == couponID);
+        Console.WriteLine("Invalid coupon ID.");
+        return;
+    }
 
-        if (coupon != null)
+    // Ensure couponList is populated from database
+    PopulateCouponList(couponList, connectionString);
+
+    // Find the coupon in the list
+    Coupon coupon = couponList.Find(c => c.CouponID == couponID);
+
+    if (coupon != null)
+    {
+        Console.WriteLine("Current Coupon Information:");
+        Console.WriteLine($"Coupon ID: {coupon.CouponID}, Coupon Code: {coupon.CouponCode}, Discount Amount: {coupon.DiscountAmount}, IsActive: {(coupon.IsActive ? "Active" : "Inactive")}");
+
+        Console.WriteLine("Enter new information: ");
+        Console.Write("Enter coupon code: ");
+        string couponCode = Console.ReadLine();
+        Console.Write("Enter discount amount: ");
+        if (!decimal.TryParse(Console.ReadLine(), out decimal discountAmount))
         {
-            Console.WriteLine("Enter new information: ");
-            Console.Write("Enter coupon code: ");
-            coupon.CouponCode = Console.ReadLine();
-            Console.Write("Enter discount amount: ");
-            coupon.DiscountAmount = decimal.Parse(Console.ReadLine());
-            Console.Write("Is the coupon active (1 for active, 0 for inactive): ");
-            coupon.IsActive = Console.ReadLine() == "1";
+            Console.WriteLine("Invalid discount amount.");
+            return;
+        }
+        Console.Write("Is the coupon active (1 for active, 0 for inactive): ");
+        bool isActive = Console.ReadLine() == "1";
 
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+        // Confirmation before updating coupon information
+        string confirmation;
+        do
+        {
+            Console.Write("Are you sure you want to update this coupon information? (yes/no): ");
+            confirmation = Console.ReadLine().ToLower();
+        } while (confirmation != "yes" && confirmation != "no");
+
+        if (confirmation == "yes")
+        {
+            try
             {
-                connection.Open();
-                string query = "UPDATE coupon SET coupon_code = @CouponCode, discount_amount = @DiscountAmount, is_active = @IsActive WHERE id_coupon = @CouponID";
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@CouponID", coupon.CouponID);
-                command.Parameters.AddWithValue("@CouponCode", coupon.CouponCode);
-                command.Parameters.AddWithValue("@DiscountAmount", coupon.DiscountAmount);
-                command.Parameters.AddWithValue("@IsActive", coupon.IsActive);
-                command.ExecuteNonQuery();
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "UPDATE coupon SET coupon_code = @CouponCode, discount_amount = @DiscountAmount, is_active = @IsActive WHERE id_coupon = @CouponID";
+                    MySqlCommand command = new MySqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@CouponID", coupon.CouponID);
+                    command.Parameters.AddWithValue("@CouponCode", couponCode);
+                    command.Parameters.AddWithValue("@DiscountAmount", discountAmount);
+                    command.Parameters.AddWithValue("@IsActive", isActive ? 1 : 0);
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                    {
+                        // Update the local coupon object
+                        coupon.CouponCode = couponCode;
+                        coupon.DiscountAmount = discountAmount;
+                        coupon.IsActive = isActive;
+
+                        Console.WriteLine("Coupon information updated successfully!");
+                    }
+                    else
+                    {
+                        Console.WriteLine("No rows were updated. Please check the Coupon ID.");
+                    }
+                }
             }
-            couponList.Add(coupon);
-            Console.WriteLine("Coupon information updated successfully!");
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+            }
         }
         else
         {
-            Console.WriteLine("Coupon with this ID not found.");
+            Console.WriteLine("Update operation cancelled.");
         }
     }
-    static void DeleteCoupon(List<Coupon> couponList, string connectionString)
+    else
     {
-        Console.Write("Enter the coupon ID to delete: ");
-        int couponID = int.Parse(Console.ReadLine());
+        Console.WriteLine($"Coupon with ID {couponID} not found in the list.");
+    }
+}
+    static void DeleteCoupon(List<Coupon> couponList, string connectionString)
+{
+    Console.Write("Enter the coupon ID to delete: ");
+    int couponID = int.Parse(Console.ReadLine());
 
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
+    // Find coupon based on CouponID in the list
+    Coupon coupon = couponList.Find(c => c.CouponID == couponID);
+
+    if (coupon != null)
+    {
+        Console.WriteLine("Coupon Information to Delete:");
+        Console.WriteLine($"Coupon ID: {coupon.CouponID}, Coupon Code: {coupon.CouponCode}, Discount Amount: {coupon.DiscountAmount}, IsActive: {(coupon.IsActive ? "Active" : "Inactive")}");
+
+        // Confirmation before deleting coupon
+        string confirmation;
+        do
         {
-            connection.Open();
-            string query = "DELETE FROM coupon WHERE id_coupon = @CouponID";
-            MySqlCommand command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@CouponID", couponID);
-            int rowsAffected = command.ExecuteNonQuery();
-            if (rowsAffected > 0)
+            Console.Write("Are you sure you want to delete this coupon? (yes/no): ");
+            confirmation = Console.ReadLine().ToLower();
+        } while (confirmation != "yes" && confirmation != "no");
+
+        if (confirmation == "yes")
+        {
+            try
             {
-                Coupon coupon = couponList.Find(c => c.CouponID == couponID);
-                couponList.Remove(coupon);
-                Console.WriteLine("Coupon deleted successfully!");
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "DELETE FROM coupon WHERE id_coupon = @CouponID";
+                    MySqlCommand command = new MySqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@CouponID", couponID);
+                    int rowsAffected = command.ExecuteNonQuery();
+                    if (rowsAffected > 0)
+                    {
+                        couponList.Remove(coupon);
+                        Console.WriteLine("Coupon deleted successfully!");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Coupon with this ID not found.");
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Coupon with this ID not found.");
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
+        else
+        {
+            Console.WriteLine("Delete operation cancelled.");
+        }
     }
+    else
+    {
+        Console.WriteLine($"Coupon with ID {couponID} not found in the list.");
+    }
+}
     static void SearchCouponByID(List<Coupon> couponList, string connectionString)
     {
         int couponID = AnsiConsole.Ask<int>("Enter [green]coupon ID[/] to search:");
@@ -2674,31 +3236,40 @@ class Program
         }
     }
     
-    static List<Policy> LoadPoliciesFromDatabase(string connectionString)
+    static void PopulatePolicyList(List<Policy> policyList, string connectionString)
     {
-        List<Policy> policies = new List<Policy>();
+        policyList.Clear(); // Clear the list to ensure it's fresh
 
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        try
         {
-            string query = "SELECT * FROM policy";
-            MySqlCommand command = new MySqlCommand(query, connection);
-            connection.Open();
-            MySqlDataReader reader = command.ExecuteReader();
-
-            while (reader.Read())
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
-                Policy policy = new Policy
-                {
-                    ID = reader.GetInt32("ID"),
-                    Title = reader.GetString("Title"),
-                    Content = reader.GetString("Content")
-                };
-                policies.Add(policy);
-            }
-            reader.Close();
-        }
+                connection.Open();
+                string query = "SELECT * FROM policy";
+                MySqlCommand command = new MySqlCommand(query, connection);
 
-        return policies;
+                using (MySqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Policy policy = new Policy
+                        {
+                            ID = Convert.ToInt32(reader["ID"]),
+                            Title = reader["Title"].ToString(),
+                            Content = reader["Content"].ToString()
+                        };
+
+                        policyList.Add(policy);
+                    }
+
+                    reader.Close();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("An error occurred while populating the policy list: " + ex.Message);
+        }
     }    
     static void DisplayPolicy(List<Policy> policyList)
     {
@@ -2758,85 +3329,172 @@ class Program
         Console.WriteLine("Added a new policy!");
     }
     static void EditPolicy(List<Policy> policyList, string connectionString)
+{
+    // Populate the policy list to ensure it's up-to-date
+    PopulatePolicyList(policyList, connectionString);
+
+    Console.Write("Enter the policy ID to edit: ");
+    if (int.TryParse(Console.ReadLine(), out int policyID))
     {
-        Console.Write("Enter the policy ID to edit: ");
-        int policyID = int.Parse(Console.ReadLine());
         Policy policy = policyList.Find(p => p.ID == policyID);
 
         if (policy != null)
         {
-            Console.Write("Enter new policy title: ");
-            policy.Title = Console.ReadLine();
-            Console.Write("Enter new policy content: ");
-            policy.Content = Console.ReadLine();
+            Console.WriteLine("Current Policy Information:");
+            Console.WriteLine($"ID: {policy.ID}, Title: {policy.Title}, Content: {policy.Content}");
 
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            Console.Write("Enter new policy title: ");
+            string newTitle = Console.ReadLine();
+
+            Console.Write("Enter new policy content: ");
+            string newContent = Console.ReadLine();
+
+            // Confirmation before updating policy information
+            string confirmation;
+            do
             {
-                connection.Open();
-                string query = "UPDATE policy SET Title = @PolicyTitle, Content = @PolicyContent WHERE ID = @PolicyID";
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@PolicyID", policy.ID);
-                command.Parameters.AddWithValue("@PolicyTitle", policy.Title);
-                command.Parameters.AddWithValue("@PolicyContent", policy.Content);
-                command.ExecuteNonQuery();
+                Console.Write("Are you sure you want to update this policy? (yes/no): ");
+                confirmation = Console.ReadLine().ToLower();
+            } while (confirmation != "yes" && confirmation != "no");
+
+            if (confirmation == "yes")
+            {
+                try
+                {
+                    using (MySqlConnection connection = new MySqlConnection(connectionString))
+                    {
+                        connection.Open();
+
+                        // Update policy information
+                        string query = "UPDATE policy SET Title = @PolicyTitle, Content = @PolicyContent WHERE ID = @PolicyID";
+                        MySqlCommand command = new MySqlCommand(query, connection);
+                        command.Parameters.AddWithValue("@PolicyTitle", newTitle);
+                        command.Parameters.AddWithValue("@PolicyContent", newContent);
+                        command.Parameters.AddWithValue("@PolicyID", policyID);
+
+                        int rowsUpdated = command.ExecuteNonQuery();
+                        if (rowsUpdated > 0)
+                        {
+                            Console.WriteLine("Policy updated successfully!");
+
+                            // Update the policy details in the local list
+                            policy.Title = newTitle;
+                            policy.Content = newContent;
+
+                            // Re-populate the policy list to ensure it reflects the latest database state
+                            PopulatePolicyList(policyList, connectionString);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Failed to update policy information. No rows affected.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred while updating policy information: " + ex.Message);
+                }
             }
-            policyList.Add(policy);
-            Console.WriteLine("Policy updated successfully!");
+            else
+            {
+                Console.WriteLine("Update operation cancelled.");
+            }
         }
         else
         {
             Console.WriteLine("Policy with this ID not found.");
         }
     }
-    static void DeletePolicy(List<Policy> policyList, string connectionString)
+    else
     {
-        Console.Write("Enter the policy ID to delete: ");
-        int policyID = int.Parse(Console.ReadLine());
+        Console.WriteLine("Invalid policy ID. Please enter a valid number.");
+    }
+}
+    static void DeletePolicy(List<Policy> policyList, string connectionString)
+{
+    Console.Write("Enter the policy ID to delete: ");
+    int policyID = int.Parse(Console.ReadLine());
+
+    // Find policy based on PolicyID in the list
+    Policy policy = policyList.Find(p => p.ID == policyID);
+
+    if (policy != null)
+    {
+        Console.WriteLine("Policy Information to Delete:");
+        Console.WriteLine($"ID: {policy.ID}, Title: {policy.Title}, Content: {policy.Content}");
+
+        // Confirmation before deleting policy
+        string confirmation;
+        do
+        {
+            Console.Write("Are you sure you want to delete this policy? (yes/no): ");
+            confirmation = Console.ReadLine().ToLower();
+        } while (confirmation != "yes" && confirmation != "no");
+
+        if (confirmation == "yes")
+        {
+            try
+            {
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "DELETE FROM policy WHERE ID = @PolicyID";
+                    MySqlCommand command = new MySqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@PolicyID", policyID);
+                    int rowsAffected = command.ExecuteNonQuery();
+                    Console.WriteLine(rowsAffected + " policy(ies) deleted.");
+
+                    // Remove policy from local list
+                    policyList.Remove(policy);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
+            }
+        }
+        else
+        {
+            Console.WriteLine("Delete operation cancelled.");
+        }
+    }
+    else
+    {
+        Console.WriteLine($"Policy with ID {policyID} not found in the list.");
+    }
+}
+
+    static void PopulateIssueList(List<Issue> issueList, string connectionString)
+    {
+        issueList.Clear(); // Clear existing list to avoid duplicates
 
         try
         {
             using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
                 connection.Open();
-                string query = "DELETE FROM policy WHERE ID = @PolicyID";
+                string query = "SELECT * FROM customer_support";
                 MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@PolicyID", policyID);
-                int rowsAffected = command.ExecuteNonQuery();
-                Console.WriteLine(rowsAffected + " policy(ies) deleted.");
+                using (MySqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Issue issue = new Issue
+                        {
+                            ID = reader.GetInt32("ID"),
+                            IssueTitle = reader.GetString("IssueTitle"),
+                            IssueContent = reader.GetString("IssueContent"),
+                            CreatedAt = reader.GetDateTime("CreatedAt")
+                        };
+                        issueList.Add(issue);
+                    }
+                }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error: " + ex.Message);
+            Console.WriteLine("An error occurred while populating issue list: " + ex.Message);
         }
-    }
-    
-    static List<Issue> LoadIssuesFromDatabase(string connectionString)
-    {
-        List<Issue> issues = new List<Issue>();
-
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
-        {
-            string query = "SELECT * FROM customer_support";
-            MySqlCommand command = new MySqlCommand(query, connection);
-            connection.Open();
-            MySqlDataReader reader = command.ExecuteReader();
-
-            while (reader.Read())
-            {
-                Issue issue = new Issue
-                {
-                    ID = reader.GetInt32("ID"),
-                    IssueTitle = reader.GetString("IssueTitle"),
-                    IssueContent = reader.GetString("IssueContent"),
-                    CreatedAt = reader.GetDateTime("CreatedAt")
-                };
-                issues.Add(issue);
-            }
-            reader.Close();
-        }
-
-        return issues;
     }
     static void DisplayIssues(List<Issue> issueList)
     {
@@ -2901,62 +3559,147 @@ class Program
         Console.WriteLine("Issue has been submitted to the support team!");
     }
     static void EditIssue(List<Issue> issueList, string connectionString)
+{
+    // Populate the issue list to ensure it's up-to-date
+    PopulateIssueList(issueList, connectionString);
+
+    Console.Write("Enter the issue ID to edit: ");
+    if (int.TryParse(Console.ReadLine(), out int issueID))
     {
-        Console.Write("Enter the issue ID to edit: ");
-        int issueID = int.Parse(Console.ReadLine());
         Issue issue = issueList.Find(i => i.ID == issueID);
 
         if (issue != null)
         {
-            Console.Write("Enter new issue title: ");
-            issue.IssueTitle = Console.ReadLine();
-            Console.Write("Enter new issue description: ");
-            issue.IssueContent = Console.ReadLine();
-            Console.Write("Enter issue date (yyyy-MM-dd HH:mm:ss): ");
-            issue.CreatedAt = DateTime.Parse(Console.ReadLine());
+            Console.WriteLine("Current Issue Information:");
+            Console.WriteLine($"ID: {issue.ID}, Title: {issue.IssueTitle}, Content: {issue.IssueContent}, CreatedAt: {issue.CreatedAt}");
 
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            Console.Write("Enter new issue title: ");
+            string newTitle = Console.ReadLine();
+
+            Console.Write("Enter new issue content: ");
+            string newContent = Console.ReadLine();
+
+            // Prompt user for new CreatedAt date
+            Console.WriteLine("Enter new issue date:");
+            DateTime newCreatedAt = DateTime.Parse(Console.ReadLine());
+
+            // Confirmation before updating issue information
+            string confirmation;
+            do
             {
-                connection.Open();
-                string query = "UPDATE customer_support SET IssueTitle = @IssueTitle, IssueContent = @IssueDescription, CreatedAt = @IssueDate WHERE ID = @IssueID";
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@IssueID", issue.ID);
-                command.Parameters.AddWithValue("@IssueTitle", issue.IssueTitle);
-                command.Parameters.AddWithValue("@IssueDescription", issue.IssueContent);
-                command.Parameters.AddWithValue("@IssueDate", issue.CreatedAt);
-                command.ExecuteNonQuery();
+                Console.Write("Are you sure you want to update this issue? (yes/no): ");
+                confirmation = Console.ReadLine().ToLower();
+            } while (confirmation != "yes" && confirmation != "no");
+
+            if (confirmation == "yes")
+            {
+                try
+                {
+                    using (MySqlConnection connection = new MySqlConnection(connectionString))
+                    {
+                        connection.Open();
+
+                        // Update issue information including CreatedAt
+                        string query = "UPDATE customer_support SET IssueTitle = @IssueTitle, IssueContent = @IssueContent, CreatedAt = @CreatedAt WHERE ID = @IssueID";
+                        MySqlCommand command = new MySqlCommand(query, connection);
+                        command.Parameters.AddWithValue("@IssueTitle", newTitle);
+                        command.Parameters.AddWithValue("@IssueContent", newContent);
+                        command.Parameters.AddWithValue("@CreatedAt", newCreatedAt);
+                        command.Parameters.AddWithValue("@IssueID", issueID);
+
+                        int rowsUpdated = command.ExecuteNonQuery();
+                        if (rowsUpdated > 0)
+                        {
+                            Console.WriteLine("Issue updated successfully!");
+
+                            // Update the issue details in the local list
+                            issue.IssueTitle = newTitle;
+                            issue.IssueContent = newContent;
+                            issue.CreatedAt = newCreatedAt;
+
+                            // Re-populate the issue list to ensure it reflects the latest database state
+                            PopulateIssueList(issueList, connectionString);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Failed to update issue information. No rows affected.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred while updating issue information: " + ex.Message);
+                }
             }
-            issueList.Add(issue);
-            Console.WriteLine("Issue information has been updated!");
+            else
+            {
+                Console.WriteLine("Update operation cancelled.");
+            }
         }
         else
         {
             Console.WriteLine("Issue with this ID not found.");
         }
     }
-    static void DeleteIssue(List<Issue> issueList, string connectionString)
+    else
     {
-        Console.Write("Enter the issue ID to delete: ");
-        int issueID = int.Parse(Console.ReadLine());
+        Console.WriteLine("Invalid issue ID. Please enter a valid number.");
+    }
+}
+    static void DeleteIssue(List<Issue> issueList, string connectionString)
+{
+    Console.Write("Enter the issue ID to delete: ");
+    int issueID = int.Parse(Console.ReadLine());
 
-        try
+    // Find issue based on IssueID in the list
+    Issue issue = issueList.Find(i => i.ID == issueID);
+
+    if (issue != null)
+    {
+        Console.WriteLine("Issue Information to Delete:");
+        Console.WriteLine($"ID: {issue.ID}, Title: {issue.IssueTitle}, Content: {issue.IssueContent}, CreatedAt: {issue.CreatedAt}");
+
+        // Confirmation before deleting issue
+        string confirmation;
+        do
         {
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            Console.Write("Are you sure you want to delete this issue? (yes/no): ");
+            confirmation = Console.ReadLine().ToLower();
+        } while (confirmation != "yes" && confirmation != "no");
+
+        if (confirmation == "yes")
+        {
+            try
             {
-                connection.Open();
-                string query = "DELETE FROM customer_support WHERE ID = @IssueID";
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@IssueID", issueID);
-                int rowsAffected = command.ExecuteNonQuery();
-                Console.WriteLine(rowsAffected + " issue(s) deleted from the system.");
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "DELETE FROM customer_support WHERE ID = @IssueID";
+                    MySqlCommand command = new MySqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@IssueID", issueID);
+                    int rowsAffected = command.ExecuteNonQuery();
+                    Console.WriteLine(rowsAffected + " issue(s) deleted from the system.");
+
+                    // Remove issue from local list
+                    issueList.Remove(issue);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine("Error: " + ex.Message);
+            Console.WriteLine("Delete operation cancelled.");
         }
     }
-    
+    else
+    {
+        Console.WriteLine($"Issue with ID {issueID} not found in the list.");
+    }
+}
+
     static List<Invoice> LoadInvoicesFromDatabase(string connectionString)
     {
         List<Invoice> invoices = new List<Invoice>();
@@ -3051,57 +3794,85 @@ class Program
         invoiceList.Add(invoice);
         Console.WriteLine("Invoice added successfully!");
     }
-    static void EditInvoice(List<Invoice> invoiceList,string connectionString)
+    static void EditInvoice(List<Invoice> invoiceList, string connectionString)
+{
+    Console.Write("Enter the invoice ID to edit: ");
+    int invoiceID = int.Parse(Console.ReadLine());
+
+    using (MySqlConnection connection = new MySqlConnection(connectionString))
     {
-        Console.Write("Enter the invoice ID to edit: ");
-        int invoiceID = int.Parse(Console.ReadLine());
+        connection.Open();
+        string query = "SELECT * FROM Invoice WHERE InvoiceID = @InvoiceID";
+        MySqlCommand command = new MySqlCommand(query, connection);
+        command.Parameters.AddWithValue("@InvoiceID", invoiceID);
 
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        using (MySqlDataReader reader = command.ExecuteReader())
         {
-            connection.Open();
-            string query = "SELECT * FROM invoice WHERE InvoiceID = @InvoiceID";
-            MySqlCommand command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@InvoiceID", invoiceID);
-
-            using (MySqlDataReader reader = command.ExecuteReader())
+            if (reader.Read())
             {
-                if (reader.Read())
-                {
-                    Console.WriteLine("Enter new information: ");
-                    Console.Write("Enter product ID: ");
-                    int productID = int.Parse(Console.ReadLine());
-                    Console.Write("Enter customer ID: ");
-                    int customerID = int.Parse(Console.ReadLine());
-                    Console.Write("Enter invoice date (yyyy-MM-dd): ");
-                    DateTime invoiceDate = DateTime.Parse(Console.ReadLine());
-                    Console.Write("Enter total amount: ");
-                    int totalAmount = int.Parse(Console.ReadLine());
+                Console.WriteLine("Current Invoice Information:");
+                Console.WriteLine($"Invoice ID: {reader["InvoiceID"]}, Product ID: {reader["ProductID"]}, Customer ID: {reader["CustomerID"]}, Invoice Date: {reader["InvoiceDate"]}, Total Amount: {reader["TotalAmount"]}");
 
+                Console.WriteLine("Enter new information: ");
+                Console.Write("Enter new product ID: ");
+                int newProductID = int.Parse(Console.ReadLine());
+                Console.Write("Enter new customer ID: ");
+                int newCustomerID = int.Parse(Console.ReadLine());
+                Console.Write("Enter new invoice date (yyyy-MM-dd): ");
+                DateTime newInvoiceDate = DateTime.Parse(Console.ReadLine());
+                Console.Write("Enter new total amount: ");
+                int newTotalAmount = int.Parse(Console.ReadLine());
+
+                // Confirmation before updating invoice information
+                string confirmation;
+                do
+                {
+                    Console.Write("Are you sure you want to update this invoice? (yes/no): ");
+                    confirmation = Console.ReadLine().ToLower();
+                } while (confirmation != "yes" && confirmation != "no");
+
+                if (confirmation == "yes")
+                {
                     reader.Close();
 
-                    query = "UPDATE Invoice SET ProductID = @ProductID,CustomerID = @CustomerID, InvoiceDate = @InvoiceDate, TotalAmount = @TotalAmount WHERE InvoiceID = @InvoiceID";
+                    query = "UPDATE Invoice SET ProductID = @ProductID, CustomerID = @CustomerID, InvoiceDate = @InvoiceDate, TotalAmount = @TotalAmount WHERE InvoiceID = @InvoiceID";
                     command = new MySqlCommand(query, connection);
                     command.Parameters.AddWithValue("@InvoiceID", invoiceID);
-                    command.Parameters.AddWithValue("@ProductID", productID);
-                    command.Parameters.AddWithValue("@CustomerID", customerID);
-                    command.Parameters.AddWithValue("@InvoiceDate", invoiceDate);
-                    command.Parameters.AddWithValue("@TotalAmount", totalAmount);
+                    command.Parameters.AddWithValue("@ProductID", newProductID);
+                    command.Parameters.AddWithValue("@CustomerID", newCustomerID);
+                    command.Parameters.AddWithValue("@InvoiceDate", newInvoiceDate);
+                    command.Parameters.AddWithValue("@TotalAmount", newTotalAmount);
                     command.ExecuteNonQuery();
 
                     Console.WriteLine("Invoice information updated successfully!");
                 }
                 else
                 {
-                    Console.WriteLine("No invoice found with this ID.");
+                    Console.WriteLine("Update operation cancelled.");
                 }
+            }
+            else
+            {
+                Console.WriteLine("No invoice found with this ID.");
             }
         }
     }
-    static void DeleteInvoice(List<Invoice> invoiceList,string connectionString)
-    {
-        Console.Write("Enter the invoice ID to delete: ");
-        int invoiceID = int.Parse(Console.ReadLine());
+}
+    static void DeleteInvoice(List<Invoice> invoiceList, string connectionString)
+{
+    Console.Write("Enter the invoice ID to delete: ");
+    int invoiceID = int.Parse(Console.ReadLine());
 
+    // Confirmation before deleting invoice
+    string confirmation;
+    do
+    {
+        Console.Write("Are you sure you want to delete this invoice? (yes/no): ");
+        confirmation = Console.ReadLine().ToLower();
+    } while (confirmation != "yes" && confirmation != "no");
+
+    if (confirmation == "yes")
+    {
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
             connection.Open();
@@ -3112,6 +3883,11 @@ class Program
             Console.WriteLine(rowsAffected + " invoice(s) deleted from the database.");
         }
     }
+    else
+    {
+        Console.WriteLine("Delete operation cancelled.");
+    }
+}
     static void SearchInvoice(List<Invoice> invoiceList, string connectionString)
     {
         int invoiceID = AnsiConsole.Ask<int>("Enter [green]invoice ID[/] to search:");
@@ -3168,7 +3944,7 @@ class Program
                 Order order = new Order
                 {
                     OrderID = reader.GetInt32("OrderID"),
-                    UserName = reader.GetString("UserName"),
+                    UserID = reader.GetInt32("UserName"),
                     ProductID = reader.GetInt32("ProductID"),
                     CouponCode = reader.IsDBNull(reader.GetOrdinal("CouponCode")) ? null : reader.GetString("CouponCode"),
                     Quantity = reader.GetInt32("Quantity"),
@@ -3197,7 +3973,7 @@ class Program
 
             // Add some columns
             table.AddColumn("Order ID");
-            table.AddColumn("User Name");
+            table.AddColumn("User ID");
             table.AddColumn("Product ID");
             table.AddColumn("Coupon Code");
             table.AddColumn("Quantity");
@@ -3210,7 +3986,7 @@ class Program
             {
                 table.AddRow(
                     reader["OrderID"].ToString(),
-                    reader["UserName"].ToString(),
+                    reader["UserID"].ToString(),
                     reader["ProductID"].ToString(),
                     reader["CouponCode"].ToString(),
                     reader["Quantity"].ToString(),
@@ -3231,7 +4007,7 @@ class Program
         Console.Write("Enter order ID: ");
         order.OrderID = int.Parse(Console.ReadLine());
         Console.Write("Enter User Name: ");
-        order.UserName = Console.ReadLine();
+        order.UserID = int.Parse(Console.ReadLine());
         Console.Write("Enter product ID: ");
         order.ProductID = int.Parse(Console.ReadLine());
         Console.Write("Enter Coupon: ");
@@ -3248,10 +4024,10 @@ class Program
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
             connection.Open();
-            string query = "INSERT INTO `order` (OrderID, UserName, ProductID, CouponCode,Quantity, OrderDate, ShippingAddress, TotalAmount) VALUES (@OrderID, @UserName, @ProductID, @CouponCode,@Quantity, @OrderDate, @ShippingAddress, @TotalAmount)";
+            string query = "INSERT INTO `order` (OrderID, UserID, ProductID, CouponCode,Quantity, OrderDate, ShippingAddress, TotalAmount) VALUES (@OrderID, @UserID, @ProductID, @CouponCode,@Quantity, @OrderDate, @ShippingAddress, @TotalAmount)";
             MySqlCommand command = new MySqlCommand(query, connection);
             command.Parameters.AddWithValue("@OrderID", order.OrderID);
-            command.Parameters.AddWithValue("@UserName", order.UserName);
+            command.Parameters.AddWithValue("@UserID", order.UserID);
             command.Parameters.AddWithValue("@ProductID", order.ProductID);
             command.Parameters.AddWithValue("@CouponCode", order.CouponCode);
             command.Parameters.AddWithValue("@Quantity", order.Quantity);
@@ -3265,119 +4041,203 @@ class Program
         Console.WriteLine("Order added successfully!");
     }
     static void EditOrderInfo(List<Order> orderList, string connectionString)
+{
+    Console.Write("Enter the order ID to edit: ");
+    if (!int.TryParse(Console.ReadLine(), out int orderID))
     {
-        Console.Write("Enter the order ID to edit: ");
-        int orderID = int.Parse(Console.ReadLine());
-        Order order = orderList.Find(o => o.OrderID == orderID);
-
-        if (order != null)
-        {
-            Console.WriteLine("Enter new information: ");
-            Console.Write("Enter customer ID: ");
-            order.UserName = Console.ReadLine();
-            Console.Write("Enter product ID: ");
-            order.ProductID = int.Parse(Console.ReadLine());
-            Console.Write("Enter sale ID: ");
-            order.CouponCode = Console.ReadLine();
-            Console.Write("Enter quantity ID: ");
-            order.Quantity = int.Parse(Console.ReadLine());
-            Console.Write("Enter order date (yyyy-MM-dd): ");
-            order.OrderDate = DateTime.Parse(Console.ReadLine());
-            Console.Write("Enter delivery address: ");
-            order.ShippingAddress = Console.ReadLine();
-            Console.Write("Enter total amount: ");
-            order.TotalAmount = int.Parse(Console.ReadLine());
-
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
-            {
-                connection.Open();
-                string query = "UPDATE `order` SET UserName = @UserName, ProductID = @ProductID, Coupon Code = @CouponCode,Quantity = @Quantity, OrderDate = @OrderDate, ShippingAddress = @ShippingAddress, TotalAmount = @TotalAmount WHERE OrderID = @OrderID";
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@OrderID", order.OrderID);
-                command.Parameters.AddWithValue("@UserName", order.UserName);
-                command.Parameters.AddWithValue("@ProductID", order.ProductID);
-                command.Parameters.AddWithValue("@SaleID", order.CouponCode);
-                command.Parameters.AddWithValue("@Quantity", order.Quantity);
-                command.Parameters.AddWithValue("@OrderDate", order.OrderDate);
-                command.Parameters.AddWithValue("@ShippingAddress", order.ShippingAddress);
-                command.Parameters.AddWithValue("@TotalAmount", order.TotalAmount);
-                command.ExecuteNonQuery();
-            }
-            orderList.Add(order);
-            Console.WriteLine("Order information updated successfully!");
-        }
-        else
-        {
-            Console.WriteLine("Order with this ID not found.");
-        }
+        Console.WriteLine("Invalid order ID.");
+        return;
     }
-    static void DeleteOrderInfo(List<Order> orderList, string connectionString)
-    {
-        Console.Write("Enter the order ID to delete: ");
-        int orderID = int.Parse(Console.ReadLine());
 
+    try
+    {
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
             connection.Open();
-            string query = "DELETE FROM order WHERE OrderID = @OrderID";
-            MySqlCommand command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@OrderID", orderID);
-            int rowsAffected = command.ExecuteNonQuery();
-            Console.WriteLine(rowsAffected + " order deleted from the database.");
-        }
+            // Query to find the order by ID
+            string selectQuery = "SELECT OrderID, UserID, ProductID, CouponCode, Quantity, OrderDate, ShippingAddress, TotalAmount FROM `order` WHERE OrderID = @OrderID";
+            MySqlCommand selectCommand = new MySqlCommand(selectQuery, connection);
+            selectCommand.Parameters.AddWithValue("@OrderID", orderID);
 
-        Order order = orderList.Find(o => o.OrderID == orderID);
-        if (order != null)
-        {
-            orderList.Remove(order);
+            using (MySqlDataReader reader = selectCommand.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    Console.WriteLine("Current Order Information:");
+                    Console.WriteLine($"Order ID: {reader["OrderID"]}, Customer ID: {reader["UserID"]}, Product ID: {reader["ProductID"]}, Coupon Code: {reader["CouponCode"]}, Quantity: {reader["Quantity"]}, Order Date: {reader["OrderDate"]}, Shipping Address: {reader["ShippingAddress"]}, Total Amount: {reader["TotalAmount"]}");
+
+                    Console.WriteLine("Enter new information: ");
+                    Console.Write("Enter new customer name: ");
+                    string newUserID = Console.ReadLine();
+                    Console.Write("Enter new product ID: ");
+                    if (!int.TryParse(Console.ReadLine(), out int newProductID))
+                    {
+                        Console.WriteLine("Invalid product ID.");
+                        return;
+                    }
+                    Console.Write("Enter new coupon code: ");
+                    string newCouponCode = Console.ReadLine();
+                    Console.Write("Enter new quantity: ");
+                    if (!int.TryParse(Console.ReadLine(), out int newQuantity))
+                    {
+                        Console.WriteLine("Invalid quantity.");
+                        return;
+                    }
+                    Console.Write("Enter new order date (yyyy-MM-dd): ");
+                    if (!DateTime.TryParse(Console.ReadLine(), out DateTime newOrderDate))
+                    {
+                        Console.WriteLine("Invalid order date.");
+                        return;
+                    }
+                    Console.Write("Enter new shipping address: ");
+                    string newShippingAddress = Console.ReadLine();
+                    Console.Write("Enter new total amount: ");
+                    if (!decimal.TryParse(Console.ReadLine(), out decimal newTotalAmount))
+                    {
+                        Console.WriteLine("Invalid total amount.");
+                        return;
+                    }
+
+                    // Confirmation before updating order information
+                    string confirmation;
+                    do
+                    {
+                        Console.Write("Are you sure you want to update this order? (yes/no): ");
+                        confirmation = Console.ReadLine().ToLower();
+                    } while (confirmation != "yes" && confirmation != "no");
+
+                    if (confirmation == "yes"||confirmation == "Yes")
+                    {
+                        reader.Close(); // Close the reader before executing the update command
+
+                        // Update the order in the database
+                        string updateQuery = "UPDATE `order` SET UserName = @UserName, ProductID = @ProductID, CouponCode = @CouponCode, Quantity = @Quantity, OrderDate = @OrderDate, ShippingAddress = @ShippingAddress, TotalAmount = @TotalAmount WHERE OrderID = @OrderID";
+                        MySqlCommand updateCommand = new MySqlCommand(updateQuery, connection);
+                        updateCommand.Parameters.AddWithValue("@OrderID", orderID);
+                        updateCommand.Parameters.AddWithValue("@UserName", newUserID);
+                        updateCommand.Parameters.AddWithValue("@ProductID", newProductID);
+                        updateCommand.Parameters.AddWithValue("@CouponCode", newCouponCode);
+                        updateCommand.Parameters.AddWithValue("@Quantity", newQuantity);
+                        updateCommand.Parameters.AddWithValue("@OrderDate", newOrderDate);
+                        updateCommand.Parameters.AddWithValue("@ShippingAddress", newShippingAddress);
+                        updateCommand.Parameters.AddWithValue("@TotalAmount", newTotalAmount);
+
+                        int rowsAffected = updateCommand.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine("Order information updated successfully!");
+                        }
+                        else
+                        {
+                            Console.WriteLine("No rows were updated. Please check the Order ID.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Update operation cancelled.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Order with ID {orderID} not found.");
+                }
+            }
         }
     }
-    static void SearchOrderByID(List<Order> orderList, string connectionString)
-{
-    int orderID = AnsiConsole.Ask<int>("Enter [green]order ID[/] to search:");
-
-    using (MySqlConnection connection = new MySqlConnection(connectionString))
+    catch (Exception ex)
     {
-        string query = "SELECT * FROM `order` WHERE OrderID = @Order";
-        MySqlCommand command = new MySqlCommand(query, connection);
-        command.Parameters.AddWithValue("@Order", orderID);
-
-        connection.Open();
-        using (MySqlDataReader reader = command.ExecuteReader())
-        {
-            if (reader.Read())
-            {
-                var table = new Table();
-                table.AddColumn("Order ID");
-                table.AddColumn("UserName");
-                table.AddColumn("Product ID");
-                table.AddColumn("Coupon Code");
-                table.AddColumn("Quantity");
-                table.AddColumn("Order Date");
-                table.AddColumn("Shipping Address");
-                table.AddColumn("Total Amount");
-
-                table.AddRow(
-                    reader["OrderID"].ToString(),
-                    reader["UserName"].ToString(),
-                    reader["ProductID"].ToString(),
-                    reader["CouponCode"].ToString(),
-                    reader["Quantity"].ToString(),
-                    reader.GetDateTime("OrderDate").ToString("yyyy-MM-dd"),
-                    reader["ShippingAddress"].ToString(),
-                    reader["TotalAmount"].ToString()
-                );
-
-                AnsiConsole.Write(table);
-            }
-            else
-            {
-                AnsiConsole.MarkupLine("[red]No order found with this ID.[/]");
-            }
-        }
+        Console.WriteLine("An error occurred: " + ex.Message);
     }
 }
+    static void DeleteOrderInfo(List<Order> orderList, string connectionString)
+{
+    Console.Write("Enter the order ID to delete: ");
+    int orderID = int.Parse(Console.ReadLine());
 
+    // Confirmation before deleting order
+    string confirmation;
+    do
+    {
+        Console.Write("Are you sure you want to delete this order? (yes/no): ");
+        confirmation = Console.ReadLine().ToLower();
+    } while (confirmation != "yes" && confirmation != "no");
+
+    if (confirmation == "yes")
+    {
+        try
+        {
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = "DELETE FROM `order` WHERE OrderID = @OrderID";
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@OrderID", orderID);
+                int rowsAffected = command.ExecuteNonQuery();
+                Console.WriteLine(rowsAffected + " order deleted from the database.");
+            }
+
+            Order order = orderList.Find(o => o.OrderID == orderID);
+            if (order != null)
+            {
+                orderList.Remove(order);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+    }
+    else
+    {
+        Console.WriteLine("Delete operation cancelled.");
+    }
+}
+    static void SearchOrderByID(List<Order> orderList, string connectionString)
+    {
+        int orderID = AnsiConsole.Ask<int>("Enter [green]order ID[/] to search:");
+
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            string query = "SELECT * FROM `order` WHERE OrderID = @Order";
+            MySqlCommand command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@Order", orderID);
+
+            connection.Open();
+            using (MySqlDataReader reader = command.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    var table = new Table();
+                    table.AddColumn("Order ID");
+                    table.AddColumn("User ID");
+                    table.AddColumn("Product ID");
+                    table.AddColumn("Coupon Code");
+                    table.AddColumn("Quantity");
+                    table.AddColumn("Order Date");
+                    table.AddColumn("Shipping Address");
+                    table.AddColumn("Total Amount");
+
+                    table.AddRow(
+                        reader["OrderID"].ToString(),
+                        reader["UserID"].ToString(),
+                        reader["ProductID"].ToString(),
+                        reader["CouponCode"].ToString(),
+                        reader["Quantity"].ToString(),
+                        reader.GetDateTime("OrderDate").ToString("yyyy-MM-dd"),
+                        reader["ShippingAddress"].ToString(),
+                        reader["TotalAmount"].ToString()
+                    );
+
+                    AnsiConsole.Write(table);
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine("[red]No order found with this ID.[/]");
+                }
+            }
+        }
+    }
     static void ApplyCouponToOrder(int orderID, string couponCode, string connectionString)
     {
         using (MySqlConnection connection = new MySqlConnection(connectionString))
@@ -3522,58 +4382,158 @@ class Program
         Console.WriteLine("Export receipt added successfully!");
     }
     static void EditExportReceiptInfo(List<ExportReceipt> exportReceiptList, string connectionString)
+{
+    Console.Write("Enter the ExportReceipt ID to edit: ");
+    if (!int.TryParse(Console.ReadLine(), out int receiptID))
     {
-        Console.Write("Enter the ExportReceipt ID to edit: ");
-        int receiptID = int.Parse(Console.ReadLine());
-        ExportReceipt er = exportReceiptList.Find(o => o.ExportReceiptID == receiptID);
-
-        if (er != null)
-        {
-            Console.WriteLine("Enter new information: ");
-            Console.Write("Enter Product ID: ");
-            er.ProductID = int.Parse(Console.ReadLine());
-            Console.Write("Enter export date (yyyy-MM-dd): ");
-            er.ExportDate = DateTime.Parse(Console.ReadLine());
-            Console.Write("Enter shipping address: ");
-            er.ShippingAddress = Console.ReadLine();
-            Console.Write("Enter total amount: ");
-            er.TotalAmount = int.Parse(Console.ReadLine());
-
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
-            {
-                connection.Open();
-                string query = "UPDATE export_receipt SET ProductID = @ProductID, ExportReceiptDate = @ExportReceiptDate, ShippingAddress = @ShippingAddress, TotalAmount = @TotalAmount WHERE ExportReceiptID = @ExportReceiptID";
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@ExportReceiptID", er.ExportReceiptID);
-                command.Parameters.AddWithValue("@ProductID", er.ProductID);
-                command.Parameters.AddWithValue("@ExportReceiptDate", er.ExportDate);
-                command.Parameters.AddWithValue("@ShippingAddress", er.ShippingAddress);
-                command.Parameters.AddWithValue("@TotalAmount", er.TotalAmount);
-                command.ExecuteNonQuery();
-            }
-            exportReceiptList.Add(er);
-            Console.WriteLine("Export receipt information updated successfully!");
-        }
-        else
-        {
-            Console.WriteLine("No Export receipt found with this ID.");
-        }
+        Console.WriteLine("Invalid ExportReceipt ID.");
+        return;
     }
-    static void DeleteExportReceiptInfo(List<ExportReceipt> exportReceiptList,string connectionString)
-    {
-        Console.Write("Enter the export receipt ID to delete: ");
-        int receiptID = int.Parse(Console.ReadLine());
 
+    try
+    {
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
             connection.Open();
-            string query = "DELETE FROM export_receipt WHERE ExportReceiptID = @ExportReceiptID";
-            MySqlCommand command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@ExportReceiptID", receiptID);
-            int rowsAffected = command.ExecuteNonQuery();
-            Console.WriteLine(rowsAffected + " Export receipt deleted from the database.");
+            // Query to find the ExportReceipt by ID
+            string selectQuery = "SELECT ExportReceiptID, ProductID, ExportReceiptDate, ShippingAddress, TotalAmount FROM export_receipt WHERE ExportReceiptID = @ExportReceiptID";
+            MySqlCommand selectCommand = new MySqlCommand(selectQuery, connection);
+            selectCommand.Parameters.AddWithValue("@ExportReceiptID", receiptID);
+
+            using (MySqlDataReader reader = selectCommand.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    Console.WriteLine("Current ExportReceipt Information:");
+                    Console.WriteLine($"ExportReceipt ID: {reader["ExportReceiptID"]}, Product ID: {reader["ProductID"]}, Export Date: {reader["ExportReceiptDate"]}, Shipping Address: {reader["ShippingAddress"]}, Total Amount: {reader["TotalAmount"]}");
+
+                    Console.WriteLine("Enter new information: ");
+                    Console.Write("Enter new Product ID: ");
+                    int newProductID;
+                    if (!int.TryParse(Console.ReadLine(), out newProductID))
+                    {
+                        Console.WriteLine("Invalid Product ID.");
+                        return;
+                    }
+                    Console.Write("Enter new export date (yyyy-MM-dd): ");
+                    DateTime newExportDate;
+                    if (!DateTime.TryParse(Console.ReadLine(), out newExportDate))
+                    {
+                        Console.WriteLine("Invalid export date.");
+                        return;
+                    }
+                    Console.Write("Enter new shipping address: ");
+                    string newShippingAddress = Console.ReadLine();
+                    Console.Write("Enter new total amount: ");
+                    decimal newTotalAmount;
+                    if (!decimal.TryParse(Console.ReadLine(), out newTotalAmount))
+                    {
+                        Console.WriteLine("Invalid total amount.");
+                        return;
+                    }
+
+                    // Confirmation before updating export receipt information
+                    string confirmation;
+                    do
+                    {
+                        Console.Write("Are you sure you want to update this export receipt? (yes/no): ");
+                        confirmation = Console.ReadLine().ToLower();
+                    } while (confirmation != "yes" && confirmation != "no");
+
+                    if (confirmation == "yes")
+                    {
+                        reader.Close(); // Close the reader before executing the update command
+
+                        // Update the export receipt in the database
+                        string updateQuery = "UPDATE export_receipt SET ProductID = @ProductID, ExportReceiptDate = @ExportReceiptDate, ShippingAddress = @ShippingAddress, TotalAmount = @TotalAmount WHERE ExportReceiptID = @ExportReceiptID";
+                        MySqlCommand updateCommand = new MySqlCommand(updateQuery, connection);
+                        updateCommand.Parameters.AddWithValue("@ExportReceiptID", receiptID);
+                        updateCommand.Parameters.AddWithValue("@ProductID", newProductID);
+                        updateCommand.Parameters.AddWithValue("@ExportReceiptDate", newExportDate);
+                        updateCommand.Parameters.AddWithValue("@ShippingAddress", newShippingAddress);
+                        updateCommand.Parameters.AddWithValue("@TotalAmount", newTotalAmount);
+
+                        int rowsAffected = updateCommand.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine("Export receipt information updated successfully!");
+                        }
+                        else
+                        {
+                            Console.WriteLine("No rows were updated. Please check the ExportReceipt ID.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Update operation cancelled.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Export receipt with ID {receiptID} not found.");
+                }
+            }
         }
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine("An error occurred: " + ex.Message);
+    }
+}
+    static void DeleteExportReceiptInfo(List<ExportReceipt> exportReceiptList, string connectionString)
+{
+    Console.Write("Enter the ExportReceipt ID to delete: ");
+    int receiptID;
+    if (!int.TryParse(Console.ReadLine(), out receiptID))
+    {
+        Console.WriteLine("Invalid ExportReceipt ID.");
+        return;
+    }
+
+    // Confirmation before deleting export receipt
+    string confirmation;
+    do
+    {
+        Console.Write("Are you sure you want to delete this export receipt? (yes/no): ");
+        confirmation = Console.ReadLine().ToLower();
+    } while (confirmation != "yes" && confirmation != "no");
+
+    if (confirmation == "yes")
+    {
+        try
+        {
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = "DELETE FROM export_receipt WHERE ExportReceiptID = @ExportReceiptID";
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@ExportReceiptID", receiptID);
+                int rowsAffected = command.ExecuteNonQuery();
+                Console.WriteLine(rowsAffected + " export receipt deleted from the database.");
+            }
+
+            ExportReceipt exportReceipt = exportReceiptList.Find(er => er.ExportReceiptID == receiptID);
+            if (exportReceipt != null)
+            {
+                exportReceiptList.Remove(exportReceipt);
+                Console.WriteLine("Export receipt removed from local list.");
+            }
+            else
+            {
+                Console.WriteLine("Export receipt not found in local list.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+    }
+    else
+    {
+        Console.WriteLine("Delete operation cancelled.");
+    }
+}
     static void SearchExportReceiptByID(List<ExportReceipt> exportReceiptList, string connectionString)
     {
         Console.Write("Enter the export receipt ID to search: ");
@@ -3697,57 +4657,156 @@ class Program
         importReceiptList.Add(ir);
         Console.WriteLine("Import receipt added successfully!");
     }
-    static void EditImportReceiptInfo(List<ImportReceipt> importReceiptList,string connectionString)
+    static void EditImportReceiptInfo(List<ImportReceipt> importReceiptList, string connectionString)
+{
+    Console.Write("Enter the ImportReceipt ID to edit: ");
+    if (!int.TryParse(Console.ReadLine(), out int receiptID))
     {
-        Console.Write("Enter the receipt ID to edit: ");
-        int receiptID = int.Parse(Console.ReadLine());
-        ImportReceipt ir = importReceiptList.Find(o => o.ImportReceiptID == receiptID);
-
-        if (ir != null)
-        {
-            Console.WriteLine("Enter new information: ");
-            Console.Write("Enter Product ID: ");
-            ir.ProductID = int.Parse(Console.ReadLine());
-            Console.Write("Enter ImportDate: ");
-            ir.ImportDate = DateTime.Parse(Console.ReadLine());
-            Console.Write("Enter total amount: ");
-            int totalAmount = int.Parse(Console.ReadLine());
-
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
-            {
-                connection.Open();
-                string query = "UPDATE import_receipt SET ProductID = @ProductID, ImportReceiptDate = @ImportReceiptDate, TotalAmount = @TotalAmount WHERE ImportReceiptID = @ImportReceiptID";
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@ImportReceiptID", ir.ImportReceiptID);
-                command.Parameters.AddWithValue("@ProductID", ir.ProductID);
-                command.Parameters.AddWithValue("@ImportReceiptDate", ir.ImportDate);
-                command.Parameters.AddWithValue("@TotalAmount", ir.TotalAmount);
-                command.ExecuteNonQuery();
-
-            }
-            Console.WriteLine("Import receipt information updated successfully!");
-            importReceiptList.Add(ir);
-        }
-        else
-        {
-            Console.WriteLine("No Import receipt found with this ID.");
-        }
+        Console.WriteLine("Invalid ImportReceipt ID.");
+        return;
     }
-    static void DeleteImportReceiptInfo(List<ImportReceipt> importReceiptList,string connectionString)
-    {
-        Console.Write("Enter the receipt ID to delete: ");
-        int receiptID = int.Parse(Console.ReadLine());
 
+    try
+    {
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
             connection.Open();
-            string query = "DELETE FROM import_receipt WHERE ImportReceiptID = @ImportReceiptID";
-            MySqlCommand command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@ImportReceiptID", receiptID);
-            int rowsAffected = command.ExecuteNonQuery();
-            Console.WriteLine(rowsAffected + " import receipt deleted from the database.");
+            // Query to find the ImportReceipt by ID
+            string selectQuery = "SELECT ImportReceiptID, ProductID, ImportReceiptDate, TotalAmount FROM import_receipt WHERE ImportReceiptID = @ImportReceiptID";
+            MySqlCommand selectCommand = new MySqlCommand(selectQuery, connection);
+            selectCommand.Parameters.AddWithValue("@ImportReceiptID", receiptID);
+
+            using (MySqlDataReader reader = selectCommand.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    Console.WriteLine("Current ImportReceipt Information:");
+                    Console.WriteLine($"ImportReceipt ID: {reader["ImportReceiptID"]}, Product ID: {reader["ProductID"]}, Import Date: {reader["ImportReceiptDate"]}, Total Amount: {reader["TotalAmount"]}");
+
+                    Console.WriteLine("Enter new information: ");
+                    Console.Write("Enter new Product ID: ");
+                    int newProductID;
+                    if (!int.TryParse(Console.ReadLine(), out newProductID))
+                    {
+                        Console.WriteLine("Invalid Product ID.");
+                        return;
+                    }
+                    Console.Write("Enter new import date (yyyy-MM-dd): ");
+                    DateTime newImportDate;
+                    if (!DateTime.TryParse(Console.ReadLine(), out newImportDate))
+                    {
+                        Console.WriteLine("Invalid import date.");
+                        return;
+                    }
+                    Console.Write("Enter new total amount: ");
+                    decimal newTotalAmount;
+                    if (!decimal.TryParse(Console.ReadLine(), out newTotalAmount))
+                    {
+                        Console.WriteLine("Invalid total amount.");
+                        return;
+                    }
+
+                    // Confirmation before updating import receipt information
+                    string confirmation;
+                    do
+                    {
+                        Console.Write("Are you sure you want to update this import receipt? (yes/no): ");
+                        confirmation = Console.ReadLine().ToLower();
+                    } while (confirmation != "yes" && confirmation != "no");
+
+                    if (confirmation == "yes")
+                    {
+                        reader.Close(); // Close the reader before executing the update command
+
+                        // Update the import receipt in the database
+                        string updateQuery = "UPDATE import_receipt SET ProductID = @ProductID, ImportReceiptDate = @ImportReceiptDate, TotalAmount = @TotalAmount WHERE ImportReceiptID = @ImportReceiptID";
+                        MySqlCommand updateCommand = new MySqlCommand(updateQuery, connection);
+                        updateCommand.Parameters.AddWithValue("@ImportReceiptID", receiptID);
+                        updateCommand.Parameters.AddWithValue("@ProductID", newProductID);
+                        updateCommand.Parameters.AddWithValue("@ImportReceiptDate", newImportDate);
+                        updateCommand.Parameters.AddWithValue("@TotalAmount", newTotalAmount);
+
+                        int rowsAffected = updateCommand.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine("Import receipt information updated successfully!");
+                        }
+                        else
+                        {
+                            Console.WriteLine("No rows were updated. Please check the ImportReceipt ID.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Update operation cancelled.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Import receipt with ID {receiptID} not found.");
+                }
+            }
         }
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine("An error occurred: " + ex.Message);
+    }
+}
+    static void DeleteImportReceiptInfo(List<ImportReceipt> importReceiptList, string connectionString)
+{
+    Console.Write("Enter the ImportReceipt ID to delete: ");
+    int receiptID;
+    if (!int.TryParse(Console.ReadLine(), out receiptID))
+    {
+        Console.WriteLine("Invalid ImportReceipt ID.");
+        return;
+    }
+
+    // Confirmation before deleting import receipt
+    string confirmation;
+    do
+    {
+        Console.Write("Are you sure you want to delete this import receipt? (yes/no): ");
+        confirmation = Console.ReadLine().ToLower();
+    } while (confirmation != "yes" && confirmation != "no");
+
+    if (confirmation == "yes")
+    {
+        try
+        {
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = "DELETE FROM import_receipt WHERE ImportReceiptID = @ImportReceiptID";
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@ImportReceiptID", receiptID);
+                int rowsAffected = command.ExecuteNonQuery();
+                Console.WriteLine(rowsAffected + " import receipt deleted from the database.");
+            }
+
+            ImportReceipt importReceipt = importReceiptList.Find(ir => ir.ImportReceiptID == receiptID);
+            if (importReceipt != null)
+            {
+                importReceiptList.Remove(importReceipt);
+                Console.WriteLine("Import receipt removed from local list.");
+            }
+            else
+            {
+                Console.WriteLine("Import receipt not found in local list.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+    }
+    else
+    {
+        Console.WriteLine("Delete operation cancelled.");
+    }
+}
     static void SearchImportReceiptByID(List<ImportReceipt> importReceiptList,string connectionString)
     {
         Console.Write("Enter the receipt ID to search: ");
